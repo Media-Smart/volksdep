@@ -63,7 +63,7 @@ setup(
     install_requires=[
         'numpy',
         'pycuda>=2019.1.2',
-        'torch==1.2.0',
+        'torch==1.2.*',
     ],
     python_requires='>3.6',
     cmdclass={
