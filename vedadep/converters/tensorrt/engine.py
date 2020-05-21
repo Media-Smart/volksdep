@@ -50,7 +50,7 @@ class TRTEngine:
             log_level='ERROR',
             max_batch_size=1,
             fp16_mode=False,
-            max_workspace_size=0,
+            max_workspace_size=100,
             strict_type_constraints=False,
             int8_mode=False,
             int8_calibrator=None,
@@ -66,8 +66,8 @@ class TRTEngine:
                 the batch size for which the engine will be optimized.
             fp16_mode (bool, default is False): Whether or not 16-bit kernels are permitted. During engine build
                 fp16 kernels will also be tried when this mode is enabled.
-            max_workspace_size (int, default is 0): The maximum GPU temporary memory which the ICudaEngine can use at
-                execution time.
+            max_workspace_size (int, default is 100): The maximum GPU temporary memory which the ICudaEngine can use at
+                execution time. MB
             strict_type_constraints (bool, default is False): When strict type constraints is set, TensorRT will choose
                 the type constraints that conforms to type constraints. If the flag is not enabled higher precision
                 implementation may be chosen if it results in higher performance.
@@ -82,7 +82,7 @@ class TRTEngine:
 
         builder = trt.Builder(logger)
         builder.max_batch_size = max_batch_size
-        builder.max_workspace_size = max_workspace_size
+        builder.max_workspace_size = max_workspace_size * (1 << 16)
         builder.fp16_mode = fp16_mode
         builder.strict_type_constraints = strict_type_constraints
 

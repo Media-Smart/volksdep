@@ -36,6 +36,11 @@ def torch_benchmark(model, dummy_input, dtype, iters=100, dataset=None):
 
     model = copy.deepcopy(model).cuda().to(torch_dtypes[dtype]).eval()
 
+    # warm up
+    for _ in range(10):
+        model(dummy_input)
+    torch.cuda.synchronize()
+
     with torch.no_grad():
         # throughput evaluate
         torch.cuda.synchronize()
@@ -106,6 +111,11 @@ def trt_benchmark(model, dummy_input, dtype, iters=100, int8_calibrator=None, da
         raise TypeError('Unsupported dtype {}'.format(dtype))
 
     engine.feed(dummy_input)
+
+    # warm up
+    for _ in range(10):
+        engine.run(max_batch_size)
+    engine.stream.synchronize()
 
     # throughput evaluate
     engine.stream.synchronize()
