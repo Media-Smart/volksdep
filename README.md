@@ -147,9 +147,7 @@ class MyMetric(BaseMetric):
 Now implemented metric classes are:
 - [x] accuracy
 
-please check 
-
-##Known Issue
+## Known Issue
 1. Dynamic shape input is not supported.
 2. PyTorch Upsample operation with specified scale_factor will make errors, 
 please use it with specified size.
