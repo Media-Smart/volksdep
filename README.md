@@ -57,7 +57,8 @@ python setup.py install
 
 ## Known Issues
 1. The output order of tensorRT engine is determined by the graph structure, so it may not be the same as the 
-output order of original pytorch model when there are multi outputs in pytorch model.
+output order of original pytorch model when there are multi outputs in pytorch model. You can manually change the 
+return order in pytorch model to overcome this problem.
 2. Dynamic shape input is not supported.
 3. PyTorch Upsample operation is supported with specified size and align_corners=False.
 
