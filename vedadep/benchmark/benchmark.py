@@ -166,7 +166,7 @@ def trt_benchmark(model, dummy_input, dtype, iters=100, int8_calibrator=None, da
 
 def generate_dummy_input(shapes):
     if isinstance(shapes[0], int):
-        return np.random.randn(*shapes).astype(np.float32)
+        return np.ones(shapes).astype(np.float32)
 
     dummy_input = []
     for shape in shapes:
