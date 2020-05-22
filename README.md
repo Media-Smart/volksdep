@@ -1,5 +1,5 @@
 ## Introduction
-vedadep is an open-source toolbox for deploying and accelerating PyTorch model with TensorRT in x86 and arch64 platform.
+vedadep is an open-source toolbox for deploying and accelerating PyTorch model with TensorRT in x86_64 and aarch64 platform.
 
 ## Features
 - **Auto transformation and acceleration**\
