@@ -29,7 +29,7 @@ class CustomDataset(BaseDataset):
         """dataset for metric calculation
 
         Args:
-            data (tuple, list): data used for pytorch model and tensorRT engine. data form should be like
+            data (tuple or list): data used for pytorch model and tensorRT engine. data form should be like
                 (inputs, targets).
         """
 

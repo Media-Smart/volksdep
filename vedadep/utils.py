@@ -16,7 +16,7 @@ def get_names(inp, prefix):
         elif isinstance(x, (list, tuple)):
             names += get_names(x, sub_prefix)
         else:
-            raise TypeError('Input/Output only support variables, tuple ans list')
+            raise TypeError('Input/Output only support variables, tuple or list')
 
     return names
 
@@ -51,8 +51,13 @@ def to(inp, device_or_dtype):
                 pass
             else:
                 inp = inp.astype(device_or_dtype)
+        elif isinstance(inp, (int, float)):
+            if device_or_dtype == 'torch':
+                inp = torch.tensor(inp)
+            elif device_or_dtype == 'numpy':
+                inp = np.array(inp)
         else:
-            raise TypeError('Unsupported type {}'.format(type(inp)))
+            raise TypeError('Unsupported type {}, expect int, float, np.ndarray or torch.Tensor'.format(type(inp)))
 
         return inp
     else:
@@ -126,4 +131,4 @@ def cat(x, y, dim=0):
 
         return np.concatenate([x, y], axis=dim)
     else:
-        raise TypeError('Unsupported data type {}'.format(type(x)))
+        raise TypeError('Unsupported data type {}, expect np.ndarray or torch.Tensor'.format(type(x)))

@@ -55,6 +55,12 @@ cd vedadep
 python setup.py install 
 ```
 
+## Known Issues
+1. The output order of tensorRT engine is determined by the graph structure, so it may not be the same as the 
+output order of original pytorch model when there are multi outputs in pytorch model.
+2. Dynamic shape input is not supported.
+3. PyTorch Upsample operation is supported with specified size and align_corners=False.
+
 ## Usage
 ### Convert
 ```shell
@@ -161,12 +167,6 @@ class MyMetric(BaseMetric):
     def metric_name(self):
         return 'my_metric'
 ```
-
-## Known Issue
-1. The output order of tensorRT engine is determined by the graph structure, so it may not be the same as the 
-output order of original pytorch model.
-2. Dynamic shape input is not supported.
-3. PyTorch Upsample operation is supported with specified size and align_corners=False.
 
 ## Contact
 This repository is currently maintained by Hongxiang Cai ([@hxcai](http://github.com/hxcai)).
