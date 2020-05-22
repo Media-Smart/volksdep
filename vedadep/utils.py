@@ -34,18 +34,21 @@ def get_form(inp):
 
 def to(inp, device_or_dtype):
     if not isinstance(inp, (tuple, list)):
-        if isinstance(inp, (torch.Tensor, torch.nn.Module)):
-            if device_or_dtype == 'numpy':
+        if type(inp).__module__ == torch.__name__:
+            if device_or_dtype == 'torch':
+                pass
+            elif device_or_dtype == 'numpy':
                 inp = inp.cpu().numpy()
-            elif device_or_dtype == 'torch':
-                inp = inp
             else:
                 inp = inp.to(device_or_dtype)
-        elif isinstance(inp, np.ndarray):
-            if device_or_dtype == 'numpy':
-                inp = inp
-            elif device_or_dtype == 'torch':
+        elif type(inp).__module__ == np.__name__:
+            if not isinstance(inp, np.ndarray):
+                inp = np.array(inp)
+
+            if device_or_dtype == 'torch':
                 inp = torch.from_numpy(inp)
+            elif device_or_dtype == 'numpy':
+                pass
             else:
                 inp = inp.astype(device_or_dtype)
         else:
@@ -56,7 +59,6 @@ def to(inp, device_or_dtype):
         out = []
         for x in inp:
             out.append(to(x, device_or_dtype))
-        out = type(inp)(out)
 
         return out
 
@@ -94,3 +96,34 @@ def flatten_reform(inp, form):
             index += 1
 
     return out
+
+
+def add_batch_dim(inp):
+    if not isinstance(inp, (list, tuple)):
+        return inp[None, ...]
+
+    out = []
+    for x in inp:
+        out.append(add_batch_dim(x))
+
+    return out
+
+
+def cat(x, y, dim=0):
+    if isinstance(x, (tuple, list)):
+        assert isinstance(y, (tuple, list)) and (len(x) == len(y))
+
+        out = []
+        for sub_x, sub_y in zip(x, y):
+            out.append(cat(sub_x, sub_y, dim))
+        return out
+    elif isinstance(x, torch.Tensor):
+        assert isinstance(y, torch.Tensor)
+
+        return torch.cat([x, y], dim=dim)
+    elif isinstance(x, np.ndarray):
+        assert isinstance(y, np.ndarray)
+
+        return np.concatenate([x, y], axis=dim)
+    else:
+        raise TypeError('Unsupported data type {}'.format(type(x)))

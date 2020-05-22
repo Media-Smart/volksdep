@@ -17,13 +17,14 @@ class BaseMetric(object):
         super(BaseMetric, self).__init__()
 
     @abstractmethod
-    def metric(self, pred, target):
+    def metric(self, preds, targets):
         """calculate metric result
 
         Args:
-            pred (np.numpy, list or tuple): outputs from pytorch model or tensorRT engine, and will be flatten
-                automatecally. For example, if pytorch output like (x,(y,z)), then the pred form is (x,y,z).
-            target (np.numpy, list or tuple): target given by user.
+            preds (np.numpy, list or tuple): outputs from pytorch model or tensorRT engine, and will be flatten
+                automatecally. Please make sure outputs order from pytorch model is the same as outputs order from
+                tensorRT egnine.
+            targets (np.numpy, list or tuple): targets given by user.
         """
         pass
 
@@ -46,12 +47,12 @@ class Accuracy(BaseMetric):
 
         self.ignore_index = ignore_index
 
-    def metric(self, pred, target):
-        pred = np.argmax(pred, axis=-1)
+    def metric(self, preds, targets):
+        preds = np.argmax(preds, axis=-1)
 
-        mask = target != self.ignore_index
+        mask = targets != self.ignore_index
 
-        true_count = np.sum((target == pred) & mask)
+        true_count = np.sum((targets == preds) & mask)
         total_count = np.sum(mask)
 
         acc = 1.0 * true_count / total_count

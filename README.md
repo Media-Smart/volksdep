@@ -61,11 +61,10 @@ python setup.py install
 import numpy as np
 import torch
 import torchvision
-
 from vedadep.converters import TRTEngine, Calibrator
 
 # create dummy input for tensorRT engine building.
-dummy_input = torch.randn(1, 3, 224, 224).cuda()
+dummy_input = torch.ones(1, 3, 224, 224).cuda()
 
 # create pytorch model
 model = torchvision.models.resnet18().cuda().eval()
@@ -77,7 +76,7 @@ engine = TRTEngine(build_from='torch', model=model, dummy_input=dummy_input)
 # build engine with int8 mode
 # engine = TRTEngine(build_from='torch', model=model, dummy_input=dummy_input, int8_mode=True)
 # build engine with int8 mode and calibrator
-# dummy_calibrator = Calibrator(data=np.random.randn(10, 3, 224, 224).astype(np.float32))
+# dummy_calibrator = Calibrator(data=np.ones((2, 3, 224, 224)).astype(np.float32))
 # engine = TRTEngine(build_from='torch', model=model, dummy_input=dummy_input, int8_mode=True)
 ```
 ### Execute
@@ -104,9 +103,10 @@ engine = TRTEngine(build_from='engine', name='resnet18.engine')
 ```shell
 import numpy as np
 import torchvision
-
 from vedadep.converters import Calibrator
-from vedadep.benchmark import benchmark, Dataset, metric
+from vedadep.benchmark import benchmark
+from vedadep.benchmark.dataset import CustomDataset
+from vedadep.benchmark.metric import Accuracy
 
 
 # create pytorch model
@@ -116,18 +116,35 @@ model = torchvision.models.resnet18()
 benchmark(model=model, shape=(1, 3, 224, 224), dtypes=['fp32', 'fp16', 'int8'])
 
 # benchmark with specified metric, should provide test dataset
-dummy_dataset = Dataset(
-    data=np.random.randn(100, 3, 224, 224).astype(np.float32),
-    target=np.random.randint(0, 1001, size=(100,)),
-    metric=metric.Accuracy()
-)
-benchmark(model=model, shape=(1, 3, 224, 224), dataset=dummy_dataset)
+dummy_inputs = np.random.randn(100, 3, 224, 224).astype(np.float32)
+dummy_targets = np.random.randint(0, 1001, size=(100,))
+dummy_dataset = CustomDataset(data=(dummy_inputs, dummy_targets))
+metric = Accuracy()
+benchmark(model=model, shape=(1, 3, 224, 224), dataset=dummy_dataset, metric=metric)
 
-# when int8 mode in dtypes, we can also add calibration data for int8 calibration
+# when int8 in dtypes, we can also add calibration data for int8 calibration
 dummy_calibrator = Calibrator(data=np.random.randn(10, 3, 224, 224).astype(np.float32))
-benchmark(model=model, shape=(1, 3, 224, 224), int8_calibrator=dummy_calibrator, dataset=dummy_dataset)
+benchmark(model=model, shape=(1, 3, 224, 224), int8_calibrator=dummy_calibrator, dataset=dummy_dataset, metric=metric)
 ```
-We can define our own metric class.
+We can define our own dataset.
+```shell
+import numpy as np
+from vedadep.benchmark.dataset import BaseDataset
+
+class MyDataset(BaseDataset):
+    def __init__(self):
+        super(MyDataset, self).__init__()
+
+        self.dummy_inputs = np.random.randn(100, 3, 224, 224).astype(np.float32)
+        self.dummy_targets = np.random.randint(0, 1001, size=(100,))
+
+    def __getitem__(self, index):
+        return self.dummy_inputs[index], self.dummy_targets[index]
+
+    def __len__(self):
+        return len(self.dummy_inputs)
+```
+We can define our own metric.
 ```shell
 from vedadep.benchmark.metric import BaseMetric
 
@@ -144,14 +161,12 @@ class MyMetric(BaseMetric):
     def metric_name(self):
         return 'my_metric'
 ```
-Now implemented metric classes are:
-- [x] accuracy
 
 ## Known Issue
-1. Dynamic shape input is not supported.
-2. PyTorch Upsample operation with specified scale_factor will make errors, 
-please use it with specified size.
+1. The output order of tensorRT engine is determined by the graph structure, so it may not be the same as the 
+output order of original pytorch model.
+2. Dynamic shape input is not supported.
+3. PyTorch Upsample operation is supported with specified size and align_corners=False.
 
 ## Contact
-
 This repository is currently maintained by Hongxiang Cai ([@hxcai](http://github.com/hxcai)).
