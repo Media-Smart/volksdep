@@ -1,18 +1,16 @@
 ## Introduction
-vedadep is an open-source toolbox for deploying and accelerating PyTorch model with TensorRT in x86_64 and aarch64 platform.
+volksdep is an open-source toolbox for deploying and accelerating PyTorch model with TensorRT in x86_64 and aarch64 platform.
 
 ## Features
 - **Auto transformation and acceleration**\
-    vedadep can automatically transform and accelerate PyTorch model with TensorRT with only some few 
+    volksdep can automatically transform and accelerate PyTorch model with TensorRT with only some few 
     codes.
 
 - **Auto benchmark**\
-    vedadep can automatically generate benchmark with given PyTorch model.
-
+    volksdep can automatically generate benchmark with given PyTorch model.
 
 ## License
-This project is released under [Apache 2.0 license](https://github.com/Media-Smart/vedadep/blob/master/LICENSE).
-
+This project is released under [Apache 2.0 license](https://github.com/Media-Smart/volksdep/blob/master/LICENSE).
 
 ## Installation
 ### Requirements
@@ -29,7 +27,7 @@ We have tested the following versions of OS and softwares:
 - Python 3.6.9
 - TensorRT 6.0.x.x
 
-### Install vedadep
+### Install volksdep
 
 1. Install TensorRT following the [official instructions](https://developer.nvidia.com/tensorrt/)
 
@@ -38,15 +36,15 @@ We have tested the following versions of OS and softwares:
 3. If your platform is x86, you can create a conda virtual environment and activate it.
 
 ```shell
-conda create -n vedadep python=3.6.9 -y
-conda activate vedadep
+conda create -n volksdep python=3.6.9 -y
+conda activate volksdep
 ```
 
-4. Clone the vedadep repository.
+4. Clone the volksdep repository.
 
 ```shell
-git clone https://github.com/Media-Smart/vedadep.git
-cd vedadep
+git clone https://github.com/Media-Smart/volksdep.git
+cd volksdep
 ```
 
 5. Setup.
@@ -68,7 +66,7 @@ return order in pytorch model to overcome this problem.
 import numpy as np
 import torch
 import torchvision
-from vedadep.converters import TRTEngine, Calibrator
+from volksdep.converters import TRTEngine, Calibrator
 
 # create dummy input for tensorRT engine building.
 dummy_input = torch.ones(1, 3, 224, 224).cuda()
@@ -102,7 +100,7 @@ engine.save('resnet18.engine')
 ```
 We can load the saved engine
 ```shell
-from vedadep.converters import TRTEngine
+from volksdep.converters import TRTEngine
 
 engine = TRTEngine(build_from='engine', name='resnet18.engine')
 ```
@@ -110,10 +108,10 @@ engine = TRTEngine(build_from='engine', name='resnet18.engine')
 ```shell
 import numpy as np
 import torchvision
-from vedadep.converters import Calibrator
-from vedadep.benchmark import benchmark
-from vedadep.benchmark.dataset import CustomDataset
-from vedadep.benchmark.metric import Accuracy
+from volksdep.converters import Calibrator
+from volksdep.benchmark import benchmark
+from volksdep.benchmark.dataset import CustomDataset
+from volksdep.benchmark.metric import Accuracy
 
 
 # create pytorch model
@@ -136,7 +134,7 @@ benchmark(model=model, shape=(1, 3, 224, 224), int8_calibrator=dummy_calibrator,
 We can define our own dataset.
 ```shell
 import numpy as np
-from vedadep.benchmark.dataset import BaseDataset
+from volksdep.benchmark.dataset import BaseDataset
 
 class MyDataset(BaseDataset):
     def __init__(self):
@@ -153,7 +151,7 @@ class MyDataset(BaseDataset):
 ```
 We can define our own metric.
 ```shell
-from vedadep.benchmark.metric import BaseMetric
+from volksdep.benchmark.metric import BaseMetric
 
 class MyMetric(BaseMetric):
     def __init__(self):

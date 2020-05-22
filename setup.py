@@ -48,7 +48,7 @@ class CleanCommand(Command):
                 shutil.rmtree(path)
 
 setup(
-    name='vedadep',
+    name='volksdep',
     version='0.0.1',
     packages=find_packages(),
     url='',
