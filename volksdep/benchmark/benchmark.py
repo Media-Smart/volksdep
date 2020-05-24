@@ -1,6 +1,4 @@
 import time
-import copy
-import gc
 
 import torch
 import numpy as np
@@ -71,7 +69,7 @@ def torch_benchmark(model, dummy_input, dtype, iters=100, dataset=None, metric=N
     dummy_input = utils.to(dummy_input, 'cuda')
     dummy_input = utils.to(dummy_input, torch_dtypes[dtype])
 
-    model = copy.deepcopy(model).cuda().to(torch_dtypes[dtype]).eval()
+    model = model.cuda().to(torch_dtypes[dtype]).eval()
 
     # warm up
     for _ in range(10):
@@ -108,7 +106,6 @@ def torch_benchmark(model, dummy_input, dtype, iters=100, dataset=None, metric=N
     del model
 
     torch.cuda.empty_cache()
-    gc.collect()
 
     return throughput, latency, metric_value
 
@@ -156,10 +153,6 @@ def trt_benchmark(model, dummy_input, dtype, iters=100, int8_calibrator=None, da
 
     # recycle memory
     del dummy_input
-    del model
-
-    torch.cuda.empty_cache()
-    gc.collect()
 
     return throughput, latency, metric_value
 

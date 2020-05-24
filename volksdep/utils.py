@@ -7,16 +7,13 @@ def get_names(inp, prefix):
         inp = [inp]
 
     names = []
-
     for i in range(len(inp)):
-        x = inp[i]
+        sub_inp = inp[i]
         sub_prefix = '{}.{}'.format(prefix, i)
-        if isinstance(x, torch.Tensor):
-            names.append(sub_prefix)
-        elif isinstance(x, (list, tuple)):
-            names += get_names(x, sub_prefix)
+        if isinstance(sub_inp, (list, tuple)):
+            names += get_names(sub_inp, sub_prefix)
         else:
-            raise TypeError('Input/Output only support variables, tuple or list')
+            names.append(sub_prefix)
 
     return names
 
@@ -38,7 +35,7 @@ def to(inp, device_or_dtype):
             if device_or_dtype == 'torch':
                 pass
             elif device_or_dtype == 'numpy':
-                inp = inp.cpu().numpy()
+                inp = inp.detach().cpu().numpy()
             else:
                 inp = inp.to(device_or_dtype)
         elif type(inp).__module__ == np.__name__:

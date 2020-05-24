@@ -54,11 +54,8 @@ python setup.py install
 ```
 
 ## Known Issues
-1. The output order of tensorRT engine is determined by the graph structure, so it may not be the same as the 
-output order of original pytorch model when there are multi outputs in pytorch model. You can manually change the 
-return order in pytorch model to overcome this problem.
-2. Dynamic shape input is not supported.
-3. PyTorch Upsample operation is supported with specified size and align_corners=False.
+1. Dynamic shape input is not supported.
+2. PyTorch Upsample operation is supported with specified size, nereast mode and align_corners being False.
 
 ## Usage
 ### Convert
@@ -69,10 +66,9 @@ import torchvision
 from volksdep.converters import TRTEngine, Calibrator
 
 # create dummy input for tensorRT engine building.
-dummy_input = torch.ones(1, 3, 224, 224).cuda()
-
+dummy_input = torch.ones(1, 3, 224, 224)
 # create pytorch model
-model = torchvision.models.resnet18().cuda().eval()
+model = torchvision.models.resnet18()
 
 # build engine with fp32 mode
 engine = TRTEngine(build_from='torch', model=model, dummy_input=dummy_input)
@@ -86,10 +82,10 @@ engine = TRTEngine(build_from='torch', model=model, dummy_input=dummy_input)
 ```
 ### Execute
 ```shell
-torch_output = model(dummy_input).detach().cpu().numpy()
+model = model.cuda().eval()
+torch_output = model(dummy_input.cuda()).detach().cpu().numpy()
 # inference input can be numpy data or torch.Tensor data
 trt_output = engine.inference(dummy_input.cpu().numpy())
-# trt_output = engine.inference(dummy_input.cpu())
 
 print(np.max(np.abs(torch_output-trt_output)))
 ```

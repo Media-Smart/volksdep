@@ -1,6 +1,5 @@
 import uuid
 import copy
-import gc
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -44,17 +43,13 @@ def torch2onnx(
     dummy_input = utils.to(dummy_input, 'cuda')
     dummy_input = utils.to(dummy_input, torch.float32)
 
-    model = copy.deepcopy(model)
-    model = model.to('cuda').to(torch.float32).eval()
+    model = copy.deepcopy(model).cuda().to(torch.float32).eval()
 
-    with torch.no_grad():
-        output = model(dummy_input)
+    output = model(dummy_input)
 
     input_names = utils.get_names(dummy_input, 'input')
     output_names = utils.get_names(output, 'output')
-    dynamic_axes = {}
-    for name in input_names+output_names:
-        dynamic_axes[name] = {0: 'batch'}
+    dynamic_axes = {name: {0: 'batch'} for name in input_names+output_names}
 
     if onnx_model_name is None:
         onnx_model_name = '/tmp/{}.onnx'.format(uuid.uuid4())
@@ -71,16 +66,13 @@ def torch2onnx(
         verbose=verbose,
     )
 
-    # recycle memory
-    dummy_input = utils.to(dummy_input, 'cpu')
     output = utils.to(output, 'cpu')
     model = model.cpu()
+    dummy_input = utils.to(dummy_input, 'cpu')
 
-    del dummy_input
     del output
     del model
-
+    del dummy_input
     torch.cuda.empty_cache()
-    gc.collect()
 
     return onnx_model_name

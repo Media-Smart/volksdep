@@ -41,7 +41,7 @@ class TRTEngine:
 
         self.engine = getattr(self, 'build_from_{}'.format(build_from))(*args, **kwargs)
         self.context = self.engine.create_execution_context()
-        self.inputs, self.outputs, self.bindings, self.stream = self.allocate_buffers()
+        self.inputs, self.inputs_order, self.outputs, self.outputs_order, self.bindings, self.stream = self.allocate_buffers()
 
     @staticmethod
     def build_from_torch(
@@ -127,23 +127,29 @@ class TRTEngine:
         bindings = []
         stream = cuda.Stream()
 
-        engine = self.engine
-        for binding in engine:
-            shape = engine.get_binding_shape(binding)
-            size = trt.volume(shape) * engine.max_batch_size
-            dtype = trt.nptype(engine.get_binding_dtype(binding))
+        inputs_names = []
+        outputs_names = []
+        for binding in range(self.engine.num_bindings):
+            shape = self.engine.get_binding_shape(binding)
+            size = trt.volume(shape) * self.engine.max_batch_size
+            dtype = trt.nptype(self.engine.get_binding_dtype(binding))
             # Allocate host and device buffers
             host_mem = cuda.pagelocked_empty(size, dtype)
             device_mem = cuda.mem_alloc(host_mem.nbytes)
             # Append the device buffer to device bindings.
             bindings.append(int(device_mem))
             # Append to the appropriate list.
-            if engine.binding_is_input(binding):
+            if self.engine.binding_is_input(binding):
                 inputs.append(HostDeviceMem(host_mem, device_mem, dtype, shape))
+                inputs_names.append(self.engine.get_binding_name(binding))
             else:
                 outputs.append(HostDeviceMem(host_mem, device_mem, dtype, shape))
+                outputs_names.append(self.engine.get_binding_name(binding))
+        sorted_inputs_names = sorted(inputs_names)
+        inputs_order = [sorted_inputs_names.index(name) for name in inputs_names]
+        outputs_order = [outputs_names.index(name) for name in sorted(outputs_names)]
 
-        return inputs, outputs, bindings, stream
+        return inputs, inputs_order, outputs, outputs_order, bindings, stream
 
     def feed(self, inputs):
         for engine_inp, inp in zip(self.inputs, inputs):
@@ -169,6 +175,8 @@ class TRTEngine:
 
         inputs = utils.to(inputs, 'numpy')
         inputs = utils.flatten(inputs)
+        # reorder inputs
+        inputs = [inputs[index] for index in self.inputs_order]
         assert len(inputs) == len(self.inputs)
 
         num = inputs[0].shape[0]
@@ -186,7 +194,6 @@ class TRTEngine:
             self.run(batch_size)
             # fetch result from GPU
             self.fetch()
-
             # Synchronize the stream
             self.stream.synchronize()
 
@@ -197,6 +204,9 @@ class TRTEngine:
                     outputs.append(valid_out)
                 else:
                     outputs[i] = np.concatenate([outputs[i], valid_out], axis=0)
+
+        # reorder outputs
+        outputs = [outputs[index] for index in self.outputs_order]
 
         if len(outputs) == 1:
             outputs = outputs[0]
