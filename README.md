@@ -3,7 +3,7 @@ volksdep is an open-source toolbox for deploying and accelerating PyTorch model 
 
 ## Features
 - **Auto transformation and acceleration**\
-    volksdep can automatically transform and accelerate PyTorch model with TensorRT with only some few 
+    volksdep can automatically transform and accelerate PyTorch model with TensorRT by writing only some few 
     codes.
 
 - **Auto benchmark**\
