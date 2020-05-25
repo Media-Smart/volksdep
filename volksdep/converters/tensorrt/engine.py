@@ -34,15 +34,80 @@ class TRTEngine:
         """build tensorRT engine
 
         Args:
-            build_from (string): build engine from specified framework, now only support torch and tensorRT engine
-
+            build_from (string): build engine from specified framework, now support onnx, torch and tensorRT engine
+            args, kwargs are parameters in build_from_function
         """
 
         super(TRTEngine, self).__init__()
 
         self.engine = getattr(self, 'build_from_{}'.format(build_from))(*args, **kwargs)
         self.context = self.engine.create_execution_context()
-        self.inputs, self.inputs_order, self.outputs, self.outputs_order, self.bindings, self.stream = self.allocate_buffers()
+        self.inputs, self.outputs, self.bindings, self.stream = self.allocate_buffers()
+
+    @staticmethod
+    def build_from_onnx(
+            model_name,
+            log_level='ERROR',
+            max_batch_size=1,
+            fp16_mode=False,
+            max_workspace_size=100,
+            strict_type_constraints=False,
+            int8_mode=False,
+            int8_calibrator=None,
+    ):
+        """build trt engine from onnx model
+
+        Args:
+            model_name (string): onnx model name
+            log_level (string, default is ERROR): tensorrt logger level, now
+                INTERNAL_ERROR, ERROR, WARNING, INFO, VERBOSE are support.
+            max_batch_size (int, default is 1): The maximum batch size which can be used at execution time, and also
+                the batch size for which the engine will be optimized.
+            fp16_mode (bool, default is False): Whether or not 16-bit kernels are permitted. During engine build
+                fp16 kernels will also be tried when this mode is enabled.
+            max_workspace_size (int, default is 100): The maximum GPU temporary memory which the ICudaEngine can use at
+                execution time. MB
+            strict_type_constraints (bool, default is False): When strict type constraints is set, TensorRT will choose
+                the type constraints that conforms to type constraints. If the flag is not enabled higher precision
+                implementation may be chosen if it results in higher performance.
+            int8_mode (bool, default is False): Whether Int8 mode is used.
+            int8_calibrator (vedasep.converters.Calibrator, default is None): calibrator for int8 mode, if None,
+                default calibrator will be used as calibration data.
+        """
+
+        logger = trt.Logger(getattr(trt.Logger, log_level))
+
+        builder = trt.Builder(logger)
+        builder.max_batch_size = max_batch_size
+        builder.max_workspace_size = max_workspace_size * (1 << 16)
+        builder.fp16_mode = fp16_mode
+        builder.strict_type_constraints = strict_type_constraints
+
+        network = builder.create_network()
+        parser = trt.OnnxParser(network, logger)
+        with open(model_name, 'rb') as model:
+            if not parser.parse(model.read()):
+                for error in range(parser.num_errors):
+                    print(parser.get_error(error))
+
+        # re-order output tensor
+        output_tensors = [network.get_output(i) for i in range(network.num_outputs)]
+        [network.unmark_output(tensor) for tensor in output_tensors]
+        for tensor in output_tensors:
+            identity_out_tensor = network.add_identity(tensor).get_output(0)
+            identity_out_tensor.name = 'identity_{}'.format(tensor.name)
+            network.mark_output(tensor=identity_out_tensor)
+
+        if int8_mode:
+            builder.int8_mode = True
+            if int8_calibrator is None:
+                input_shapes = [network.get_input(i).shape for i in range(network.num_inputs)]
+                int8_calibrator = Calibrator(data=utils.gen_ones_data(input_shapes))
+            builder.int8_calibrator = int8_calibrator
+
+        engine = builder.build_cuda_engine(network)
+
+        return engine
 
     @staticmethod
     def build_from_torch(
@@ -77,31 +142,15 @@ class TRTEngine:
                 will be used as calibration data.
         """
 
-        onnx_model = torch2onnx(model, dummy_input)
+        onnx_model_name = torch2onnx(model, dummy_input)
 
-        logger = trt.Logger(getattr(trt.Logger, log_level))
+        if int8_mode and int8_calibrator is None:
+            int8_calibrator = Calibrator(data=utils.to(dummy_input, 'numpy'))
 
-        builder = trt.Builder(logger)
-        builder.max_batch_size = max_batch_size
-        builder.max_workspace_size = max_workspace_size * (1 << 16)
-        builder.fp16_mode = fp16_mode
-        builder.strict_type_constraints = strict_type_constraints
+        engine = TRTEngine.build_from_onnx(onnx_model_name, log_level, max_batch_size, fp16_mode, max_workspace_size,
+            strict_type_constraints, int8_mode, int8_calibrator)
 
-        network = builder.create_network()
-        parser = trt.OnnxParser(network, logger)
-        with open(onnx_model, 'rb') as model:
-            if not parser.parse(model.read()):
-                for error in range(parser.num_errors):
-                    print(parser.get_error(error))
-        os.remove(onnx_model)
-
-        if int8_mode:
-            builder.int8_mode = True
-            if int8_calibrator is None:
-                int8_calibrator = Calibrator(data=utils.to(dummy_input, 'numpy'))
-            builder.int8_calibrator = int8_calibrator
-
-        engine = builder.build_cuda_engine(network)
+        os.remove(onnx_model_name)
 
         return engine
 
@@ -128,8 +177,6 @@ class TRTEngine:
         bindings = []
         stream = cuda.Stream()
 
-        inputs_names = []
-        outputs_names = []
         for binding in range(self.engine.num_bindings):
             shape = self.engine.get_binding_shape(binding)
             size = trt.volume(shape) * self.engine.max_batch_size
@@ -142,15 +189,10 @@ class TRTEngine:
             # Append to the appropriate list.
             if self.engine.binding_is_input(binding):
                 inputs.append(HostDeviceMem(host_mem, device_mem, dtype, shape))
-                inputs_names.append(self.engine.get_binding_name(binding))
             else:
                 outputs.append(HostDeviceMem(host_mem, device_mem, dtype, shape))
-                outputs_names.append(self.engine.get_binding_name(binding))
-        sorted_inputs_names = sorted(inputs_names)
-        inputs_order = [sorted_inputs_names.index(name) for name in inputs_names]
-        outputs_order = [outputs_names.index(name) for name in sorted(outputs_names)]
 
-        return inputs, inputs_order, outputs, outputs_order, bindings, stream
+        return inputs, outputs, bindings, stream
 
     def feed(self, inputs):
         for engine_inp, inp in zip(self.inputs, inputs):
@@ -176,8 +218,6 @@ class TRTEngine:
 
         inputs = utils.to(inputs, 'numpy')
         inputs = utils.flatten(inputs)
-        # reorder inputs
-        inputs = [inputs[index] for index in self.inputs_order]
         assert len(inputs) == len(self.inputs)
 
         num = inputs[0].shape[0]
@@ -205,9 +245,6 @@ class TRTEngine:
                     outputs.append(valid_out)
                 else:
                     outputs[i] = np.concatenate([outputs[i], valid_out], axis=0)
-
-        # reorder outputs
-        outputs = [outputs[index] for index in self.outputs_order]
 
         if len(outputs) == 1:
             outputs = outputs[0]

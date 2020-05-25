@@ -129,3 +129,14 @@ def cat(x, y, dim=0):
         return np.concatenate([x, y], axis=dim)
     else:
         raise TypeError('Unsupported data type {}, expect np.ndarray or torch.Tensor'.format(type(x)))
+
+
+def gen_ones_data(shapes):
+    if isinstance(shapes[0], int):
+        return np.ones(shapes).astype(np.float32)
+
+    dummy_data = []
+    for shape in shapes:
+        dummy_data.append(gen_ones_data(shape))
+
+    return dummy_data

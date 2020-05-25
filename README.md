@@ -78,7 +78,7 @@ engine = TRTEngine(build_from='torch', model=model, dummy_input=dummy_input)
 # engine = TRTEngine(build_from='torch', model=model, dummy_input=dummy_input, int8_mode=True)
 # build engine with int8 mode and calibrator
 # dummy_calibrator = Calibrator(data=np.ones((2, 3, 224, 224)).astype(np.float32))
-# engine = TRTEngine(build_from='torch', model=model, dummy_input=dummy_input, int8_mode=True)
+# engine = TRTEngine(build_from='torch', model=model, dummy_input=dummy_input, int8_mode=True, int8_calibrator=dummy_calibrator)
 ```
 ### Execute
 ```shell

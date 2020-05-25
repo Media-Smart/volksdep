@@ -157,17 +157,6 @@ def trt_benchmark(model, dummy_input, dtype, iters=100, int8_calibrator=None, da
     return throughput, latency, metric_value
 
 
-def generate_dummy_input(shapes):
-    if isinstance(shapes[0], int):
-        return np.ones(shapes).astype(np.float32)
-
-    dummy_input = []
-    for shape in shapes:
-        dummy_input.append(generate_dummy_input(shape))
-
-    return dummy_input
-
-
 def benchmark(
         model,
         shape,
@@ -203,7 +192,7 @@ def benchmark(
 
     print(template.format('framework', 'framework_version', 'input_shape', 'dtype', 'throughput(FPS)', 'latency(ms)', metric_name))
 
-    dummy_input = generate_dummy_input(shape)
+    dummy_input = utils.gen_ones_data(shape)
     for dtype in dtypes:
         if dtype not in ['fp32', 'fp16']:
             pass
