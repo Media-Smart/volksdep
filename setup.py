@@ -62,7 +62,6 @@ setup(
     ],
     install_requires=[
         'numpy',
-        'onnx<=1.6.0',
         'pycuda>=2019.1.2',
         'torch==1.2.*',
     ],
