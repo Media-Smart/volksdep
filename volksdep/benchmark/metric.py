@@ -49,6 +49,7 @@ class Accuracy(BaseMetric):
 
     def metric(self, preds, targets):
         preds = np.argmax(preds, axis=-1)
+        targets = targets.squeeze()
 
         mask = targets != self.ignore_index
 

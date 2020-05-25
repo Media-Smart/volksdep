@@ -1,4 +1,5 @@
 import os
+import copy
 
 import numpy as np
 import tensorrt as trt
@@ -199,7 +200,7 @@ class TRTEngine:
 
             # Return only the host outputs.
             for i, out in enumerate(self.outputs):
-                valid_out = out.host.reshape(max_batch_size, *out.shape)[:batch_size]
+                valid_out = copy.deepcopy(out.host.reshape(max_batch_size, *out.shape)[:batch_size])
                 if current_index == 0:
                     outputs.append(valid_out)
                 else:
