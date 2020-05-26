@@ -58,7 +58,7 @@ setup(
     description='An easy toolbox for deploying and accelerating pytorch model with tensorRT in x86 and arch64 platform.',
     long_description=read('README.md'),
     setup_requires=[
-        'tensorrt>=6.0.1.0',
+        'tensorrt>=6.0.1.0, <7.0.0.*',
     ],
     install_requires=[
         'numpy',
