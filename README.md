@@ -16,16 +16,18 @@ This project is released under [Apache 2.0 license](https://github.com/Media-Sma
 ### Requirements
 
 - Linux
-- Python 3.6+
+- Python 3.6.x
+- TensorRT 6.0.x.x
 - PyTorch 1.2.0
 - CUDA 9.0 or higher
 
 We have tested the following versions of OS and softwares:
 
 - OS: Ubuntu 16.04.6 LTS
-- CUDA: 10.0
 - Python 3.6.9
-- TensorRT 6.0.x.x
+- TensorRT 6.0.1.5
+- PyTorch 1.2.0
+- CUDA: 10.1
 
 ### Install volksdep
 
@@ -50,7 +52,7 @@ cd volksdep
 5. Setup.
 
 ```shell
-python setup.py install 
+python setup.py install
 ```
 
 ## Known Issues
