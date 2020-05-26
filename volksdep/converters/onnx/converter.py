@@ -45,7 +45,8 @@ def torch2onnx(
 
     model = copy.deepcopy(model).cuda().to(torch.float32).eval()
 
-    output = model(dummy_input)
+    with torch.no_grad():
+        output = model(dummy_input)
 
     input_names = utils.get_names(dummy_input, 'input')
     output_names = utils.get_names(output, 'output')
