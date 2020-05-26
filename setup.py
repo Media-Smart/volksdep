@@ -49,7 +49,7 @@ class CleanCommand(Command):
 
 setup(
     name='volksdep',
-    version='0.0.1',
+    version='1.0',
     packages=find_packages(),
     url='',
     license='',
