@@ -196,7 +196,7 @@ class TRTEngine:
 
     def feed(self, inputs):
         for engine_inp, inp in zip(self.inputs, inputs):
-            engine_inp.host = inp.astype(engine_inp.dtype)
+            engine_inp.host = np.ascontiguousarray(inp.astype(engine_inp.dtype))
             cuda.memcpy_htod_async(engine_inp.device, engine_inp.host, self.stream)
 
     def run(self, batch_size=1):
