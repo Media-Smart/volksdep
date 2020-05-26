@@ -49,7 +49,7 @@ class CleanCommand(Command):
 
 setup(
     name='volksdep',
-    version='1.0',
+    version='2.0',
     packages=find_packages(),
     url='',
     license='',
@@ -58,12 +58,12 @@ setup(
     description='An easy toolbox for deploying and accelerating pytorch model with tensorRT in x86 and arch64 platform.',
     long_description=read('README.md'),
     setup_requires=[
-        'tensorrt>=6.0.1.0, <7.0.0.*',
+        'tensorrt>=7.0.0.*',
     ],
     install_requires=[
         'numpy',
         'pycuda>=2019.1.2',
-        'torch==1.2.*',
+        'torch>=1.2.*',
     ],
     python_requires='>3.6',
     cmdclass={

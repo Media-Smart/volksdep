@@ -16,18 +16,18 @@ This project is released under [Apache 2.0 license](https://github.com/Media-Sma
 ### Requirements
 
 - Linux
-- Python 3.6.x
-- TensorRT 6.0.x.x
-- PyTorch 1.2.0
+- Python 3.6 or higher
+- TensorRT 7.0.0.11 or higher
+- PyTorch 1.2.0 or higher
 - CUDA 9.0 or higher
 
 We have tested the following versions of OS and softwares:
 
 - OS: Ubuntu 16.04.6 LTS
 - Python 3.6.9
-- TensorRT 6.0.1.5
+- TensorRT 7.0.0.11
 - PyTorch 1.2.0
-- CUDA: 10.1
+- CUDA: 10.2
 
 ### Install volksdep
 
@@ -56,7 +56,7 @@ python setup.py install
 ```
 
 ## Known Issues
-1. Dynamic shape input is not supported.
+1. Input should be with explicit batch and shape.
 2. PyTorch Upsample operation is supported with specified size, nereast mode and align_corners being False.
 
 ## Usage

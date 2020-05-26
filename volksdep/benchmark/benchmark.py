@@ -112,14 +112,13 @@ def torch_benchmark(model, dummy_input, dtype, iters=100, dataset=None, metric=N
 
 def trt_benchmark(model, dummy_input, dtype, iters=100, int8_calibrator=None, dataset=None, metric=None):
     dummy_input = utils.to(dummy_input, 'numpy')
-    max_batch_size = utils.flatten(dummy_input)[0].shape[0]
 
     if dtype == 'fp32':
-        engine = TRTEngine(build_from='torch', model=model, dummy_input=dummy_input, max_batch_size=max_batch_size)
+        engine = TRTEngine(build_from='torch', model=model, dummy_input=dummy_input)
     elif dtype == 'fp16':
-        engine = TRTEngine(build_from='torch', model=model, dummy_input=dummy_input, max_batch_size=max_batch_size, fp16_mode=True)
+        engine = TRTEngine(build_from='torch', model=model, dummy_input=dummy_input, fp16_mode=True)
     elif dtype == 'int8':
-        engine = TRTEngine(build_from='torch', model=model, dummy_input=dummy_input, max_batch_size=max_batch_size, int8_mode=True, int8_calibrator=int8_calibrator)
+        engine = TRTEngine(build_from='torch', model=model, dummy_input=dummy_input, int8_mode=True, int8_calibrator=int8_calibrator)
     else:
         raise TypeError('Unsupported dtype {}'.format(dtype))
 
@@ -127,14 +126,14 @@ def trt_benchmark(model, dummy_input, dtype, iters=100, int8_calibrator=None, da
 
     # warm up
     for _ in range(10):
-        engine.run(max_batch_size)
+        engine.run()
     engine.stream.synchronize()
 
     # throughput evaluate
     engine.stream.synchronize()
     t0 = time.time()
     for _ in range(iters):
-        engine.run(max_batch_size)
+        engine.run()
     engine.stream.synchronize()
     t1 = time.time()
     throughput = int(1.0 * iters / (t1 - t0))
@@ -143,7 +142,7 @@ def trt_benchmark(model, dummy_input, dtype, iters=100, int8_calibrator=None, da
     engine.stream.synchronize()
     t0 = time.time()
     for _ in range(iters):
-        engine.run(max_batch_size)
+        engine.run()
         engine.stream.synchronize()
     t1 = time.time()
     latency = round(1000.0 * (t1 - t0) / iters, 2)

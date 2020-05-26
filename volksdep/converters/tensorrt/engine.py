@@ -41,6 +41,8 @@ class TRTEngine:
         super(TRTEngine, self).__init__()
 
         self.engine = getattr(self, 'build_from_{}'.format(build_from))(*args, **kwargs)
+        if self.engine.has_implicit_batch_dimension:
+            raise AttributeError('Model has implicit batch dimension, now only support explicit batch dimension.')
         self.context = self.engine.create_execution_context()
         self.inputs, self.outputs, self.bindings, self.stream = self.allocate_buffers()
 
@@ -48,9 +50,8 @@ class TRTEngine:
     def build_from_onnx(
             model_name,
             log_level='ERROR',
-            max_batch_size=1,
-            fp16_mode=False,
             max_workspace_size=100,
+            fp16_mode=False,
             strict_type_constraints=False,
             int8_mode=False,
             int8_calibrator=None,
@@ -61,12 +62,10 @@ class TRTEngine:
             model_name (string): onnx model name
             log_level (string, default is ERROR): tensorrt logger level, now
                 INTERNAL_ERROR, ERROR, WARNING, INFO, VERBOSE are support.
-            max_batch_size (int, default is 1): The maximum batch size which can be used at execution time, and also
-                the batch size for which the engine will be optimized.
-            fp16_mode (bool, default is False): Whether or not 16-bit kernels are permitted. During engine build
-                fp16 kernels will also be tried when this mode is enabled.
             max_workspace_size (int, default is 100): The maximum GPU temporary memory which the ICudaEngine can use at
                 execution time. MB
+            fp16_mode (bool, default is False): Whether or not 16-bit kernels are permitted. During engine build
+                fp16 kernels will also be tried when this mode is enabled.
             strict_type_constraints (bool, default is False): When strict type constraints is set, TensorRT will choose
                 the type constraints that conforms to type constraints. If the flag is not enabled higher precision
                 implementation may be chosen if it results in higher performance.
@@ -78,12 +77,11 @@ class TRTEngine:
         logger = trt.Logger(getattr(trt.Logger, log_level))
 
         builder = trt.Builder(logger)
-        builder.max_batch_size = max_batch_size
         builder.max_workspace_size = max_workspace_size * (1 << 16)
         builder.fp16_mode = fp16_mode
         builder.strict_type_constraints = strict_type_constraints
 
-        network = builder.create_network()
+        network = builder.create_network(1 << (int)(trt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH))
         parser = trt.OnnxParser(network, logger)
         with open(model_name, 'rb') as model:
             if not parser.parse(model.read()):
@@ -97,6 +95,9 @@ class TRTEngine:
             identity_out_tensor = network.add_identity(tensor).get_output(0)
             identity_out_tensor.name = 'identity_{}'.format(tensor.name)
             network.mark_output(tensor=identity_out_tensor)
+
+        max_batch_size = max([network.get_input(i).shape[0] for i in range(network.num_inputs)])
+        builder.max_batch_size = max_batch_size
 
         if int8_mode:
             builder.int8_mode = True
@@ -114,9 +115,8 @@ class TRTEngine:
             model,
             dummy_input,
             log_level='ERROR',
-            max_batch_size=1,
-            fp16_mode=False,
             max_workspace_size=100,
+            fp16_mode=False,
             strict_type_constraints=False,
             int8_mode=False,
             int8_calibrator=None,
@@ -128,12 +128,10 @@ class TRTEngine:
             dummy_input (torch.Tensor or np.ndarray, tuple or list): dummy input into pytorch model.
             log_level (string, default is ERROR): tensorrt logger level, now
                 INTERNAL_ERROR, ERROR, WARNING, INFO, VERBOSE are support.
-            max_batch_size (int, default is 1): The maximum batch size which can be used at execution time, and also
-                the batch size for which the engine will be optimized.
-            fp16_mode (bool, default is False): Whether or not 16-bit kernels are permitted. During engine build
-                fp16 kernels will also be tried when this mode is enabled.
             max_workspace_size (int, default is 100): The maximum GPU temporary memory which the ICudaEngine can use at
                 execution time. MB
+            fp16_mode (bool, default is False): Whether or not 16-bit kernels are permitted. During engine build
+                fp16 kernels will also be tried when this mode is enabled.
             strict_type_constraints (bool, default is False): When strict type constraints is set, TensorRT will choose
                 the type constraints that conforms to type constraints. If the flag is not enabled higher precision
                 implementation may be chosen if it results in higher performance.
@@ -147,7 +145,7 @@ class TRTEngine:
         if int8_mode and int8_calibrator is None:
             int8_calibrator = Calibrator(data=utils.to(dummy_input, 'numpy'))
 
-        engine = TRTEngine.build_from_onnx(onnx_model_name, log_level, max_batch_size, fp16_mode, max_workspace_size,
+        engine = TRTEngine.build_from_onnx(onnx_model_name, log_level, max_workspace_size, fp16_mode,
             strict_type_constraints, int8_mode, int8_calibrator)
 
         os.remove(onnx_model_name)
@@ -178,7 +176,7 @@ class TRTEngine:
         stream = cuda.Stream()
 
         for binding in range(self.engine.num_bindings):
-            shape = self.engine.get_binding_shape(binding)
+            shape = self.engine.get_binding_shape(binding)[1:]
             size = trt.volume(shape) * self.engine.max_batch_size
             dtype = trt.nptype(self.engine.get_binding_dtype(binding))
             # Allocate host and device buffers
@@ -199,8 +197,8 @@ class TRTEngine:
             engine_inp.host = np.ascontiguousarray(inp.astype(engine_inp.dtype))
             cuda.memcpy_htod_async(engine_inp.device, engine_inp.host, self.stream)
 
-    def run(self, batch_size=1):
-        self.context.execute_async(batch_size=batch_size, bindings=self.bindings, stream_handle=self.stream.handle)
+    def run(self):
+        self.context.execute_async_v2(bindings=self.bindings, stream_handle=self.stream.handle)
 
     def fetch(self):
         for out in self.outputs:
@@ -232,7 +230,7 @@ class TRTEngine:
             # feed batch data into GPU
             self.feed(batch_data)
             # engine context run based on batch data
-            self.run(batch_size)
+            self.run()
             # fetch result from GPU
             self.fetch()
             # Synchronize the stream

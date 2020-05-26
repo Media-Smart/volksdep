@@ -50,7 +50,6 @@ def torch2onnx(
 
     input_names = utils.get_names(dummy_input, 'input')
     output_names = utils.get_names(output, 'output')
-    dynamic_axes = {name: {0: 'batch'} for name in input_names+output_names}
 
     if onnx_model_name is None:
         onnx_model_name = '/tmp/{}.onnx'.format(uuid.uuid4())
@@ -61,7 +60,6 @@ def torch2onnx(
         onnx_model_name,
         input_names=input_names,
         output_names=output_names,
-        dynamic_axes=dynamic_axes,
         opset_version=opset_version,
         do_constant_folding=do_constant_folding,
         verbose=verbose,
