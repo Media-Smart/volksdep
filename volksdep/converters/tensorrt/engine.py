@@ -142,13 +142,15 @@ class TRTEngine:
 
         onnx_model_name = torch2onnx(model, dummy_input)
 
-        if int8_mode and int8_calibrator is None:
-            int8_calibrator = Calibrator(data=utils.to(dummy_input, 'numpy'))
+        try:
+            if int8_mode and int8_calibrator is None:
+                int8_calibrator = Calibrator(data=utils.to(dummy_input, 'numpy'))
 
-        engine = TRTEngine.build_from_onnx(onnx_model_name, log_level, max_workspace_size, fp16_mode,
-            strict_type_constraints, int8_mode, int8_calibrator)
+            engine = TRTEngine.build_from_onnx(onnx_model_name, log_level, max_workspace_size, fp16_mode, strict_type_constraints, int8_mode, int8_calibrator)
+        except Exception as e:
+            os.remove(onnx_model_name)
 
-        os.remove(onnx_model_name)
+            raise e
 
         return engine
 
