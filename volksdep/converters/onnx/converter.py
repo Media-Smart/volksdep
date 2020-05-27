@@ -1,4 +1,3 @@
-import uuid
 import copy
 import warnings
 warnings.filterwarnings("ignore")
@@ -14,7 +13,7 @@ __all__ = ['torch2onnx']
 def torch2onnx(
         model,
         dummy_input,
-        onnx_model_name=None,
+        onnx_model_name,
         opset_version=9,
         do_constant_folding=False,
         verbose=False
@@ -24,8 +23,7 @@ def torch2onnx(
     Args:
         model (torch.nn.Module): pytorch model
         dummy_input (torch.Tensor or np.ndarray, tuple or list): dummy input into pytorch model.
-        onnx_model_name (string, default is None): saved onnx model name, if None, onnx model will be saved in /tmp/
-            with a unique name.
+        onnx_model_name (string): saved onnx model name.
         opset_version (int, default is 9): by default we export the model to the opset version of the onnx submodule.
             Since ONNX’s latest opset may evolve before next stable release, by default we export to one stable opset
             version. Right now, supported stable opset version is 9
@@ -51,9 +49,6 @@ def torch2onnx(
     input_names = utils.get_names(dummy_input, 'input')
     output_names = utils.get_names(output, 'output')
 
-    if onnx_model_name is None:
-        onnx_model_name = '/tmp/{}.onnx'.format(uuid.uuid4())
-
     torch.onnx.export(
         model,
         dummy_input,
@@ -73,5 +68,3 @@ def torch2onnx(
     del model
     del dummy_input
     torch.cuda.empty_cache()
-
-    return onnx_model_name

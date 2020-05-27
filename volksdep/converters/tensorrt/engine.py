@@ -1,5 +1,6 @@
 import os
 import copy
+import uuid
 
 import numpy as np
 import tensorrt as trt
@@ -48,7 +49,7 @@ class TRTEngine:
 
     @staticmethod
     def build_from_onnx(
-            model_name,
+            model,
             log_level='ERROR',
             max_workspace_size=100,
             fp16_mode=False,
@@ -59,7 +60,7 @@ class TRTEngine:
         """build trt engine from onnx model
 
         Args:
-            model_name (string): onnx model name
+            model (string): onnx model name
             log_level (string, default is ERROR): tensorrt logger level, now
                 INTERNAL_ERROR, ERROR, WARNING, INFO, VERBOSE are support.
             max_workspace_size (int, default is 100): The maximum GPU temporary memory which the ICudaEngine can use at
@@ -83,7 +84,7 @@ class TRTEngine:
 
         network = builder.create_network(1 << (int)(trt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH))
         parser = trt.OnnxParser(network, logger)
-        with open(model_name, 'rb') as model:
+        with open(model, 'rb') as model:
             if not parser.parse(model.read()):
                 for error in range(parser.num_errors):
                     print(parser.get_error(error))
@@ -140,33 +141,34 @@ class TRTEngine:
                 will be used as calibration data.
         """
 
-        onnx_model_name = torch2onnx(model, dummy_input)
+        onnx_model = f'/tmp/{uuid.uuid4()}.onnx'
+        torch2onnx(model, dummy_input, onnx_model)
 
         try:
             if int8_mode and int8_calibrator is None:
                 int8_calibrator = Calibrator(data=utils.to(dummy_input, 'numpy'))
 
-            engine = TRTEngine.build_from_onnx(onnx_model_name, log_level, max_workspace_size, fp16_mode, strict_type_constraints, int8_mode, int8_calibrator)
+            engine = TRTEngine.build_from_onnx(onnx_model, log_level, max_workspace_size, fp16_mode, strict_type_constraints, int8_mode, int8_calibrator)
         except Exception as e:
-            os.remove(onnx_model_name)
+            os.remove(onnx_model)
 
             raise e
 
         return engine
 
     @staticmethod
-    def build_from_engine(name, log_level='ERROR'):
+    def build_from_engine(model, log_level='ERROR'):
         """build trt engine from saved engine
 
         Args:
-            name (string): engine file name to load
+            model (string): engine file name to load
             log_level (string, default is ERROR): tensorrt logger level, now
                 INTERNAL_ERROR, ERROR, WARNING, INFO, VERBOSE are support.
         """
 
         logger = trt.Logger(getattr(trt.Logger, log_level))
 
-        with open(name, 'rb') as f, trt.Runtime(logger) as runtime:
+        with open(model, 'rb') as f, trt.Runtime(logger) as runtime:
             engine = runtime.deserialize_cuda_engine(f.read())
 
         return engine

@@ -1,4 +1,5 @@
 import time
+from functools import partial
 
 import torch
 import numpy as np
@@ -110,15 +111,22 @@ def torch_benchmark(model, dummy_input, dtype, iters=100, dataset=None, metric=N
     return throughput, latency, metric_value
 
 
-def trt_benchmark(model, dummy_input, dtype, iters=100, int8_calibrator=None, dataset=None, metric=None):
+def trt_benchmark(model, build_from, dummy_input, dtype, iters=100, int8_calibrator=None, dataset=None, metric=None):
     dummy_input = utils.to(dummy_input, 'numpy')
 
+    if build_from == 'torch':
+        trt_engine = partial(TRTEngine, build_from='torch', model=model, dummy_input=dummy_input)
+    elif build_from == 'onnx':
+        trt_engine = partial(TRTEngine, build_from='onnx', model=model)
+    else:
+        raise ValueError(f'Unsupported build_from {build_from}, now only support torch, onnx')
+
     if dtype == 'fp32':
-        engine = TRTEngine(build_from='torch', model=model, dummy_input=dummy_input)
+        engine = trt_engine()
     elif dtype == 'fp16':
-        engine = TRTEngine(build_from='torch', model=model, dummy_input=dummy_input, fp16_mode=True)
+        engine = trt_engine(fp16_mode=True)
     elif dtype == 'int8':
-        engine = TRTEngine(build_from='torch', model=model, dummy_input=dummy_input, int8_mode=True, int8_calibrator=int8_calibrator)
+        engine = trt_engine(int8_mode=True, int8_calibrator=int8_calibrator)
     else:
         raise TypeError('Unsupported dtype {}'.format(dtype))
 
@@ -159,6 +167,7 @@ def trt_benchmark(model, dummy_input, dtype, iters=100, int8_calibrator=None, da
 def benchmark(
         model,
         shape,
+        build_from='torch',
         dtypes=('fp32', 'fp16', 'int8'),
         iters=100,
         int8_calibrator=None,
@@ -172,6 +181,7 @@ def benchmark(
         shape (tuple, list): pytorch model input shapes, data format must match pytorch model input format, for example:
             pytorch model need input format is (x,(y,z)), then shape should be ((b,c,h,w), ((b,c,h,w), (b,c,h,w))). if
             input format is x, then shape should be (b,c,h,w)
+        build_from (string, default torch): used for trt engine build.
         dtypes (tuple or list, default is ('fp32', 'fp16', 'int8')): dtypes need to be evaluated.
         iters (int, default is 100): larger iters gives more stable performance and cost more time to run.
         int8_calibrator (vedadep.converters.Calibrator, default is None): if not None, it will be used when int8 dtype
@@ -193,11 +203,12 @@ def benchmark(
 
     dummy_input = utils.gen_ones_data(shape)
     for dtype in dtypes:
-        if dtype not in ['fp32', 'fp16']:
-            pass
-        else:
-            throughput, latency, metric_value = torch_benchmark(model, dummy_input, dtype, iters, dataset, metric)
-            print(template.format('pytorch', torch.__version__, str(shape), dtype, throughput, latency, str(metric_value)))
+        if build_from == 'torch':
+            if dtype not in ['fp32', 'fp16']:
+                pass
+            else:
+                throughput, latency, metric_value = torch_benchmark(model, dummy_input, dtype, iters, dataset, metric)
+                print(template.format('pytorch', torch.__version__, str(shape), dtype, throughput, latency, str(metric_value)))
 
-        throughput, latency, metric_value = trt_benchmark(model, dummy_input, dtype, iters, int8_calibrator, dataset, metric)
+        throughput, latency, metric_value = trt_benchmark(model, build_from, dummy_input, dtype, iters, int8_calibrator, dataset, metric)
         print(template.format('tensorRT', trt.__version__, str(shape), dtype, throughput, latency, str(metric_value)))

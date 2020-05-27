@@ -1,9 +1,10 @@
 ## Introduction
-volksdep is an open-source toolbox for deploying and accelerating PyTorch model with TensorRT in x86_64 and aarch64 platform.
+volksdep is an open-source toolbox for deploying and accelerating PyTorch, Onnx and Tensorflow models with TensorRT in 
+x86_64 and aarch64 platform.
 
 ## Features
 - **Auto transformation and acceleration**\
-    volksdep can automatically transform and accelerate PyTorch model with TensorRT by writing only some few 
+    volksdep can automatically transform and accelerate PyTorch, Onnx model with TensorRT by writing only some few 
     codes.
 
 - **Auto benchmark**\
@@ -61,6 +62,7 @@ python setup.py install
 
 ## Usage
 ### Convert
+#### PyTorch convert
 ```shell
 import numpy as np
 import torch
@@ -82,14 +84,38 @@ engine = TRTEngine(build_from='torch', model=model, dummy_input=dummy_input)
 # dummy_calibrator = Calibrator(data=np.ones((2, 3, 224, 224)).astype(np.float32))
 # engine = TRTEngine(build_from='torch', model=model, dummy_input=dummy_input, int8_mode=True, int8_calibrator=dummy_calibrator)
 ```
+#### Onnx convert
+```shell
+import numpy as np
+import torch
+import torchvision
+from volksdep.converters import torch2onnx, TRTEngine, Calibrator
+
+onnx_model = 'resnet18.onnx'
+# you can use our torch2onnx to convert pytorch model onnx
+# create dummy input.
+dummy_input = torch.ones(1, 3, 224, 224)
+# create pytorch model
+model = torchvision.models.resnet18()
+# use torch2onnx to convert pytorch model to onnx, the model file named with resnet18.onnx will be saved in your current path.
+torch2onnx(model, dummy_input, onnx_model)
+
+# build engine with fp32 mode
+engine = TRTEngine(build_from='onnx', model=onnx_model)
+# build engine with fp16 mode
+# engine = TRTEngine(build_from='onnx', model=onnx_model, fp16_mode=True)
+# build engine with int8 mode
+# engine = TRTEngine(build_from='onnx', model=onnx_model, int8_mode=True)
+# build engine with int8 mode and calibrator
+# dummy_calibrator = Calibrator(data=np.ones((2, 3, 224, 224)).astype(np.float32))
+# engine = TRTEngine(build_from='onnx', model=onnx_model, int8_mode=True, int8_calibrator=dummy_calibrator)
+```
 ### Execute
 ```shell
-model = model.cuda().eval()
-torch_output = model(dummy_input.cuda()).detach().cpu().numpy()
-# inference input can be numpy data or torch.Tensor data
-trt_output = engine.inference(dummy_input.cpu().numpy())
+# input can be numpy data or torch.Tensor data
+trt_output = engine.inference(dummy_input.numpy())
 
-print(np.max(np.abs(torch_output-trt_output)))
+print(trt_output.shape)
 ```
 ### Save and load
 We can save the builded engine
@@ -100,9 +126,10 @@ We can load the saved engine
 ```shell
 from volksdep.converters import TRTEngine
 
-engine = TRTEngine(build_from='engine', name='resnet18.engine')
+engine = TRTEngine(build_from='engine', model='resnet18.engine')
 ```
 ### Benchmark
+#### PyTorch
 ```shell
 import numpy as np
 import torchvision
@@ -129,6 +156,31 @@ benchmark(model=model, shape=(1, 3, 224, 224), dataset=dummy_dataset, metric=met
 dummy_calibrator = Calibrator(data=np.random.randn(10, 3, 224, 224).astype(np.float32))
 benchmark(model=model, shape=(1, 3, 224, 224), int8_calibrator=dummy_calibrator, dataset=dummy_dataset, metric=metric)
 ```
+#### Onnx
+```shell
+import numpy as np
+from volksdep.converters import Calibrator
+from volksdep.benchmark import benchmark
+from volksdep.benchmark.dataset import CustomDataset
+from volksdep.benchmark.metric import Accuracy
+
+onnx_model = 'resnet18.onnx'
+
+# simple benchmark, only test throughput and latency
+benchmark(model=onnx_model, shape=(1, 3, 224, 224), build_from='onnx', dtypes=['fp32', 'fp16', 'int8'])
+
+# benchmark with specified metric, should provide test dataset
+dummy_inputs = np.random.randn(100, 3, 224, 224).astype(np.float32)
+dummy_targets = np.random.randint(0, 1001, size=(100,))
+dummy_dataset = CustomDataset(data=(dummy_inputs, dummy_targets))
+metric = Accuracy()
+benchmark(model=onnx_model, shape=(1, 3, 224, 224), build_from='onnx', dataset=dummy_dataset, metric=metric)
+
+# when int8 in dtypes, we can also add calibration data for int8 calibration
+dummy_calibrator = Calibrator(data=np.random.randn(10, 3, 224, 224).astype(np.float32))
+benchmark(model=onnx_model, shape=(1, 3, 224, 224), build_from='onnx', int8_calibrator=dummy_calibrator, dataset=dummy_dataset, metric=metric)
+```
+
 We can define our own dataset.
 ```shell
 import numpy as np
@@ -164,6 +216,10 @@ class MyMetric(BaseMetric):
     def metric_name(self):
         return 'my_metric'
 ```
+### Other Frameworks
+#### Tensorflow
+You can use [tensorflow-onnx](https://github.com/onnx/tensorflow-onnx) to converter your tensorflow model to onnx, and 
+then use our tool.
 
 ## Contact
 This repository is currently maintained by Hongxiang Cai ([@hxcai](http://github.com/hxcai)).
