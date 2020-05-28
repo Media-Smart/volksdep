@@ -160,6 +160,9 @@ def trt_benchmark(model, build_from, dummy_input, dtype, iters=100, int8_calibra
 
     # recycle memory
     del dummy_input
+    del engine
+
+    torch.cuda.empty_cache()
 
     return throughput, latency, metric_value
 

@@ -3,9 +3,9 @@ import copy
 import uuid
 
 import numpy as np
+import torch
 import tensorrt as trt
 import pycuda.driver as cuda
-import pycuda.autoinit
 
 from ..onnx import torch2onnx
 from .calibrator import Calibrator
@@ -29,6 +29,12 @@ class HostDeviceMem(object):
     def __repr__(self):
         return self.__str__()
 
+    def __del__(self):
+        del self.dtype
+        del self.shape
+        del self.host
+        del self.device
+
 
 class TRTEngine:
     def __init__(self, build_from, *args, **kwargs):
@@ -40,6 +46,8 @@ class TRTEngine:
         """
 
         super(TRTEngine, self).__init__()
+
+        torch.cuda.init()
 
         self.engine = getattr(self, 'build_from_{}'.format(build_from))(*args, **kwargs)
         if self.engine.has_implicit_batch_dimension:
@@ -256,3 +264,9 @@ class TRTEngine:
     def save(self, name):
         with open(name, 'wb') as f:
             f.write(self.engine.serialize())
+
+    def __del__(self):
+        """Free Cuda Memory"""
+        del self.stream
+        del self.outputs
+        del self.inputs
