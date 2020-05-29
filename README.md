@@ -67,7 +67,8 @@ python setup.py install
 import numpy as np
 import torch
 import torchvision
-from volksdep.converters import TRTEngine, Calibrator
+from volksdep.converters import TRTEngine
+from volksdep.converters import EntropyCalibrator2
 
 # create dummy input for tensorRT engine building.
 dummy_input = torch.ones(1, 3, 224, 224)
@@ -80,8 +81,8 @@ engine = TRTEngine(build_from='torch', model=model, dummy_input=dummy_input)
 # engine = TRTEngine(build_from='torch', model=model, dummy_input=dummy_input, fp16_mode=True)
 # build engine with int8 mode
 # engine = TRTEngine(build_from='torch', model=model, dummy_input=dummy_input, int8_mode=True)
-# build engine with int8 mode and calibrator
-# dummy_calibrator = Calibrator(data=np.ones((2, 3, 224, 224)).astype(np.float32))
+# build engine with int8 mode and EntropyCalibrator2
+# dummy_calibrator = EntropyCalibrator2(data=np.ones((2, 3, 224, 224)).astype(np.float32))
 # engine = TRTEngine(build_from='torch', model=model, dummy_input=dummy_input, int8_mode=True, int8_calibrator=dummy_calibrator)
 ```
 #### Onnx convert
@@ -89,7 +90,8 @@ engine = TRTEngine(build_from='torch', model=model, dummy_input=dummy_input)
 import numpy as np
 import torch
 import torchvision
-from volksdep.converters import torch2onnx, TRTEngine, Calibrator
+from volksdep.converters import torch2onnx, TRTEngine
+from volksdep.converters import EntropyCalibrator2
 
 onnx_model = 'resnet18.onnx'
 # you can use our torch2onnx to convert pytorch model onnx
@@ -106,8 +108,8 @@ engine = TRTEngine(build_from='onnx', model=onnx_model)
 # engine = TRTEngine(build_from='onnx', model=onnx_model, fp16_mode=True)
 # build engine with int8 mode
 # engine = TRTEngine(build_from='onnx', model=onnx_model, int8_mode=True)
-# build engine with int8 mode and calibrator
-# dummy_calibrator = Calibrator(data=np.ones((2, 3, 224, 224)).astype(np.float32))
+# build engine with int8 mode and EntropyCalibrator2
+# dummy_calibrator = EntropyCalibrator2(data=np.ones((2, 3, 224, 224)).astype(np.float32))
 # engine = TRTEngine(build_from='onnx', model=onnx_model, int8_mode=True, int8_calibrator=dummy_calibrator)
 ```
 ### Execute
@@ -133,7 +135,7 @@ engine = TRTEngine(build_from='engine', model='resnet18.engine')
 ```shell
 import numpy as np
 import torchvision
-from volksdep.converters import Calibrator
+from volksdep.converters import EntropyCalibrator, EntropyCalibrator2, MinMaxCalibrator
 from volksdep.benchmark import benchmark
 from volksdep.benchmark.dataset import CustomDataset
 from volksdep.benchmark.metric import Accuracy
@@ -153,13 +155,14 @@ metric = Accuracy()
 benchmark(model=model, shape=(1, 3, 224, 224), dataset=dummy_dataset, metric=metric)
 
 # when int8 in dtypes, we can also add calibration data for int8 calibration
-dummy_calibrator = Calibrator(data=np.random.randn(10, 3, 224, 224).astype(np.float32))
-benchmark(model=model, shape=(1, 3, 224, 224), int8_calibrator=dummy_calibrator, dataset=dummy_dataset, metric=metric)
+dummy_calibration_data = np.random.randn(10, 3, 224, 224).astype(np.float32)
+dummy_calibrators = [EntropyCalibrator(data=dummy_calibration_data), EntropyCalibrator2(data=dummy_calibration_data), MinMaxCalibrator(data=dummy_calibration_data)]
+benchmark(model=model, shape=(1, 3, 224, 224), int8_calibrator=dummy_calibrators, dataset=dummy_dataset, metric=metric)
 ```
 #### Onnx
 ```shell
 import numpy as np
-from volksdep.converters import Calibrator
+from volksdep.converters import EntropyCalibrator, EntropyCalibrator2, MinMaxCalibrator
 from volksdep.benchmark import benchmark
 from volksdep.benchmark.dataset import CustomDataset
 from volksdep.benchmark.metric import Accuracy
@@ -177,8 +180,9 @@ metric = Accuracy()
 benchmark(model=onnx_model, shape=(1, 3, 224, 224), build_from='onnx', dataset=dummy_dataset, metric=metric)
 
 # when int8 in dtypes, we can also add calibration data for int8 calibration
-dummy_calibrator = Calibrator(data=np.random.randn(10, 3, 224, 224).astype(np.float32))
-benchmark(model=onnx_model, shape=(1, 3, 224, 224), build_from='onnx', int8_calibrator=dummy_calibrator, dataset=dummy_dataset, metric=metric)
+dummy_calibration_data = np.random.randn(10, 3, 224, 224).astype(np.float32)
+dummy_calibrators = [EntropyCalibrator(data=dummy_calibration_data), EntropyCalibrator2(data=dummy_calibration_data), MinMaxCalibrator(data=dummy_calibration_data)]
+benchmark(model=onnx_model, shape=(1, 3, 224, 224), build_from='onnx', int8_calibrator=dummy_calibrators, dataset=dummy_dataset, metric=metric)
 ```
 
 We can define our own dataset.

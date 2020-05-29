@@ -5,14 +5,14 @@ import torch
 import numpy as np
 import tensorrt as trt
 
-from ..converters import TRTEngine
+from ..converters import TRTEngine, EntropyCalibrator2
 from .. import utils
 
 
 __all__ = ['benchmark']
 
 
-template = '| {:^20} | {:^20} | {:^20} | {:^20} | {:^20} | {:^20} | {:^20} |'
+template = '| {:^10} | {:^10} | {:^20} | {:^25} | {:^20} | {:^15} | {:^20} |'
 
 
 np_dtypes = {
@@ -187,8 +187,8 @@ def benchmark(
         build_from (string, default torch): used for trt engine build.
         dtypes (tuple or list, default is ('fp32', 'fp16', 'int8')): dtypes need to be evaluated.
         iters (int, default is 100): larger iters gives more stable performance and cost more time to run.
-        int8_calibrator (vedadep.converters.Calibrator, default is None): if not None, it will be used when int8 dtype
-            in dtypes.
+        int8_calibrator (vedadep.converters.Calibrator, tuple or list, default is None): if not None, it will be used
+            when int8 dtype in dtypes.
         dataset (vedadep.benchmark.dataset.BaseDataset): if not None, benchmark will contain correspoding metric results.
         metric (vedadep.benchmark.metric.BaseMetric): if not None, benchmark will contain correspoding metric results.
     """
@@ -202,7 +202,7 @@ def benchmark(
     else:
         metric_name = metric.metric_name()
 
-    print(template.format('framework', 'framework_version', 'input_shape', 'dtype', 'throughput(FPS)', 'latency(ms)', metric_name))
+    print(template.format('framework', 'version', 'input_shape', 'dtype', 'throughput(FPS)', 'latency(ms)', metric_name))
 
     dummy_input = utils.gen_ones_data(shape)
     for dtype in dtypes:
@@ -213,5 +213,17 @@ def benchmark(
                 throughput, latency, metric_value = torch_benchmark(model, dummy_input, dtype, iters, dataset, metric)
                 print(template.format('pytorch', torch.__version__, str(shape), dtype, throughput, latency, str(metric_value)))
 
-        throughput, latency, metric_value = trt_benchmark(model, build_from, dummy_input, dtype, iters, int8_calibrator, dataset, metric)
-        print(template.format('tensorRT', trt.__version__, str(shape), dtype, throughput, latency, str(metric_value)))
+        if dtype == 'int8':
+            if int8_calibrator is None:
+                int8_calibrators = [EntropyCalibrator2(data=dummy_input)]
+            elif not isinstance(int8_calibrator, (list, tuple)):
+                int8_calibrators = [int8_calibrator]
+            else:
+                int8_calibrators = int8_calibrator
+
+            for int8_calibrator in int8_calibrators:
+                throughput, latency, metric_value = trt_benchmark(model, build_from, dummy_input, dtype, iters, int8_calibrator, dataset, metric)
+                print(template.format('tensorrt', trt.__version__, str(shape), f'{dtype}({int8_calibrator.__class__.__name__})', throughput, latency, str(metric_value)))
+        else:
+            throughput, latency, metric_value = trt_benchmark(model, build_from, dummy_input, dtype, iters, int8_calibrator, dataset, metric)
+            print(template.format('tensorrt', trt.__version__, str(shape), dtype, throughput, latency, str(metric_value)))

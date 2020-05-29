@@ -8,7 +8,7 @@ import tensorrt as trt
 import pycuda.driver as cuda
 
 from ..onnx import torch2onnx
-from .calibrator import Calibrator
+from .calibrator import EntropyCalibrator2
 from ... import utils
 
 
@@ -30,10 +30,13 @@ class HostDeviceMem(object):
         return self.__str__()
 
     def __del__(self):
-        del self.dtype
-        del self.shape
-        del self.host
-        del self.device
+        try:
+            del self.host
+            del self.device
+            del self.dtype
+            del self.shape
+        except:
+            pass
 
 
 class TRTEngine:
@@ -79,8 +82,8 @@ class TRTEngine:
                 the type constraints that conforms to type constraints. If the flag is not enabled higher precision
                 implementation may be chosen if it results in higher performance.
             int8_mode (bool, default is False): Whether Int8 mode is used.
-            int8_calibrator (vedasep.converters.Calibrator, default is None): calibrator for int8 mode, if None,
-                default calibrator will be used as calibration data.
+            int8_calibrator (vedasep.converters.calibrator.BaseCalibrator, default is None): calibrator for int8 mode,
+                if None, default calibrator will be used as calibration data.
         """
 
         logger = trt.Logger(getattr(trt.Logger, log_level))
@@ -112,7 +115,7 @@ class TRTEngine:
             builder.int8_mode = True
             if int8_calibrator is None:
                 input_shapes = [network.get_input(i).shape for i in range(network.num_inputs)]
-                int8_calibrator = Calibrator(data=utils.gen_ones_data(input_shapes))
+                int8_calibrator = EntropyCalibrator2(data=utils.gen_ones_data(input_shapes))
             builder.int8_calibrator = int8_calibrator
 
         engine = builder.build_cuda_engine(network)
@@ -145,8 +148,8 @@ class TRTEngine:
                 the type constraints that conforms to type constraints. If the flag is not enabled higher precision
                 implementation may be chosen if it results in higher performance.
             int8_mode (bool, default is False): Whether Int8 mode is used.
-            int8_calibrator (vedasep.converters.Calibrator, default): calibrator for int8 mode, if None, dummy_input
-                will be used as calibration data.
+            int8_calibrator (vedasep.converters.calibrator.BaseCalibrator, default is None): calibrator for int8 mode,
+                if None, default calibrator will be used as calibration data.
         """
 
         onnx_model = f'/tmp/{uuid.uuid4()}.onnx'
@@ -154,7 +157,7 @@ class TRTEngine:
 
         try:
             if int8_mode and int8_calibrator is None:
-                int8_calibrator = Calibrator(data=utils.to(dummy_input, 'numpy'))
+                int8_calibrator = EntropyCalibrator2(data=utils.to(dummy_input, 'numpy'))
 
             engine = TRTEngine.build_from_onnx(onnx_model, log_level, max_workspace_size, fp16_mode, strict_type_constraints, int8_mode, int8_calibrator)
         except Exception as e:
@@ -267,6 +270,12 @@ class TRTEngine:
 
     def __del__(self):
         """Free Cuda Memory"""
-        del self.stream
-        del self.outputs
-        del self.inputs
+        try:
+            del self.engine
+            del self.context
+            del self.inputs
+            del self.outputs
+            del self.bindings
+            del self.stream
+        except:
+            pass

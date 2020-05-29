@@ -6,32 +6,28 @@ import pycuda.autoinit
 
 from ... import utils
 
-__all__ = ['Calibrator']
+__all__ = ['LegacyCalibrator', 'EntropyCalibrator', 'EntropyCalibrator2', 'MinMaxCalibrator']
 
 
-class Calibrator(trt.IInt8Calibrator):
+class BaseCalibrator(object):
     def __init__(
             self,
             data,
             batch_size=1,
-            algorithm='ENTROPY_CALIBRATION_2',
             cache_file=None,
     ):
-        """build int8 calibrator
+        """base int8 calibrator
 
         Args:
-            data (np.ndarray, torch.Tensor, tuple or list): data for int8 calibration
-            batch_size (int, default is 1): int8 calibrate batch
-            algorithm (string, default is ENTROPY_CALIBRATION_2): int8 calibrate algorithm, now support
-                LEGACY_CALIBRATION, ENTROPY_CALIBRATION, ENTROPY_CALIBRATION_2, MINMAX_CALIBRATION
-            cache_file (string, default is None): int8 calibrate file. if not None, cache file will be written if file
+            data (np.ndarray, torch.Tensor, tuple or list): data for int8 calibration.
+            batch_size (int, default is 1): int8 calibrate batch.
+            cache_file (string, default is None): int8 calibrate file. if not  None, cache file will be written if file
                 not exists and load if file exists.
         """
 
-        super(Calibrator, self).__init__()
+        super(BaseCalibrator, self).__init__()
 
         self.batch_size = batch_size
-        self.algorithm = getattr(trt.CalibrationAlgoType, algorithm)
         self.cache_file = cache_file
 
         data = utils.to(data, 'numpy')
@@ -45,9 +41,6 @@ class Calibrator(trt.IInt8Calibrator):
             device_mem = cuda.mem_alloc(inp[0].nbytes * self.batch_size)
             self.device_mems.append(device_mem)
             self.bindings.append(int(device_mem))
-
-    def get_algorithm(self):
-        return self.algorithm
 
     def get_batch_size(self):
         return self.batch_size
@@ -71,3 +64,113 @@ class Calibrator(trt.IInt8Calibrator):
         if self.cache_file is not None:
             with open(self.cache_file, "wb") as f:
                 f.write(cache)
+
+
+class LegacyCalibrator(BaseCalibrator, trt.IInt8LegacyCalibrator):
+    def __init__(
+            self,
+            data,
+            batch_size=1,
+            cache_file=None,
+            quantile=None,
+            regression_cutoff=None,
+    ):
+        """LegacyCalibrator
+
+        Args:
+            data (np.ndarray, torch.Tensor, tuple or list): data for int8 calibration.
+            batch_size (int, default is 1): int8 calibrate batch
+            cache_file (string, default is None): int8 calibrate file. if not None, cache file will be written if file
+                not exists and load if file exists.
+            quantile (float, default is None): The quantile (between 0 and 1) that will be used to select the region
+                maximum when the quantile method is in use. See the user guide for more details on how the quantile is used.
+            regression_cutoff (float, default is None): The fraction (between 0 and 1) of the maximum used to define the
+                regression cutoff when using regression to determine the region maximum. See the user guide for more details
+                on how the regression cutoff is used.
+        """
+
+        BaseCalibrator.__init__(self, data, batch_size, cache_file)
+        trt.IInt8LegacyCalibrator.__init__(self)
+
+        if quantile:
+            self.quantile = quantile
+
+            def get_quantile():
+                return self.quantile
+            setattr(self, 'get_quantile', get_quantile)
+
+        if regression_cutoff:
+            self.regression_cutoff = regression_cutoff
+
+            def get_regression_cutoff():
+                return self.regression_cutoff
+            setattr(self, 'get_regression_cutoff', get_regression_cutoff)
+
+    def read_histogram_cache(self, length):
+        pass
+
+    def write_histogram_cache(self, data, length):
+        pass
+
+
+class EntropyCalibrator(BaseCalibrator, trt.IInt8EntropyCalibrator):
+    def __init__(
+            self,
+            data,
+            batch_size=1,
+            cache_file=None,
+
+    ):
+        """EntropyCalibrator
+
+        Args:
+            data (np.ndarray, torch.Tensor, tuple or list): data for int8 calibration
+            batch_size (int, default is 1): int8 calibrate batch
+            cache_file (string, default is None): int8 calibrate file. if not None, cache file will be written if file
+                not exists and load if file exists.
+        """
+
+        BaseCalibrator.__init__(self, data, batch_size, cache_file)
+        trt.IInt8EntropyCalibrator.__init__(self)
+
+
+class EntropyCalibrator2(BaseCalibrator, trt.IInt8EntropyCalibrator2):
+    def __init__(
+            self,
+            data,
+            batch_size=1,
+            cache_file=None,
+
+    ):
+        """EntropyCalibrator
+
+        Args:
+            data (np.ndarray, torch.Tensor, tuple or list): data for int8 calibration
+            batch_size (int, default is 1): int8 calibrate batch
+            cache_file (string, default is None): int8 calibrate file. if not None, cache file will be written if file
+                not exists and load if file exists.
+        """
+
+        BaseCalibrator.__init__(self, data, batch_size, cache_file)
+        trt.IInt8EntropyCalibrator2.__init__(self)
+
+
+class MinMaxCalibrator(BaseCalibrator, trt.IInt8MinMaxCalibrator):
+    def __init__(
+            self,
+            data,
+            batch_size=1,
+            cache_file=None,
+
+    ):
+        """MinMaxCalibrator
+
+        Args:
+            data (np.ndarray, torch.Tensor, tuple or list): data for int8 calibration
+            batch_size (int, default is 1): int8 calibrate batch
+            cache_file (string, default is None): int8 calibrate file. if not None, cache file will be written if file
+                not exists and load if file exists.
+        """
+
+        BaseCalibrator.__init__(self, data, batch_size, cache_file)
+        trt.IInt8MinMaxCalibrator.__init__(self)
