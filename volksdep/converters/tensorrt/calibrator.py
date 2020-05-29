@@ -65,6 +65,9 @@ class BaseCalibrator(object):
             with open(self.cache_file, "wb") as f:
                 f.write(cache)
 
+    def __str__(self):
+        return self.__class__.__name__
+
 
 class LegacyCalibrator(BaseCalibrator, trt.IInt8LegacyCalibrator):
     def __init__(

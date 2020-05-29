@@ -223,7 +223,7 @@ def benchmark(
 
             for int8_calibrator in int8_calibrators:
                 throughput, latency, metric_value = trt_benchmark(model, build_from, dummy_input, dtype, iters, int8_calibrator, dataset, metric)
-                print(template.format('tensorrt', trt.__version__, str(shape), f'{dtype}({int8_calibrator.__class__.__name__})', throughput, latency, str(metric_value)))
+                print(template.format('tensorrt', trt.__version__, str(shape), f'{dtype}({int8_calibrator})', throughput, latency, str(metric_value)))
         else:
             throughput, latency, metric_value = trt_benchmark(model, build_from, dummy_input, dtype, iters, int8_calibrator, dataset, metric)
             print(template.format('tensorrt', trt.__version__, str(shape), dtype, throughput, latency, str(metric_value)))
