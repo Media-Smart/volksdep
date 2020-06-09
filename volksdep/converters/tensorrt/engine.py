@@ -153,15 +153,17 @@ class TRTEngine:
         """
 
         onnx_model = f'/tmp/{uuid.uuid4()}.onnx'
-        torch2onnx(model, dummy_input, onnx_model)
 
         try:
+            torch2onnx(model, dummy_input, onnx_model)
+
             if int8_mode and int8_calibrator is None:
                 int8_calibrator = EntropyCalibrator2(data=utils.to(dummy_input, 'numpy'))
 
             engine = TRTEngine.build_from_onnx(onnx_model, log_level, max_workspace_size, fp16_mode, strict_type_constraints, int8_mode, int8_calibrator)
         except Exception as e:
-            os.remove(onnx_model)
+            if os.path.exists(onnx_model):
+                os.remove(onnx_model)
 
             raise e
 
