@@ -162,10 +162,10 @@ class TRTEngine:
 
             engine = TRTEngine.build_from_onnx(onnx_model, log_level, max_workspace_size, fp16_mode, strict_type_constraints, int8_mode, int8_calibrator)
         except Exception as e:
+            raise e
+        finally:
             if os.path.exists(onnx_model):
                 os.remove(onnx_model)
-
-            raise e
 
         return engine
 
