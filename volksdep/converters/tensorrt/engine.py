@@ -1,4 +1,4 @@
-import os
+import io
 import copy
 import uuid
 
@@ -71,7 +71,7 @@ class TRTEngine:
         """build trt engine from onnx model
 
         Args:
-            model (string): onnx model name
+            model (string or io object): onnx model name
             log_level (string, default is ERROR): tensorrt logger level, now
                 INTERNAL_ERROR, ERROR, WARNING, INFO, VERBOSE are support.
             max_workspace_size (int, default is 100): The maximum GPU temporary memory which the ICudaEngine can use at
@@ -95,10 +95,14 @@ class TRTEngine:
 
         network = builder.create_network(1 << (int)(trt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH))
         parser = trt.OnnxParser(network, logger)
-        with open(model, 'rb') as model:
-            if not parser.parse(model.read()):
-                for error in range(parser.num_errors):
-                    print(parser.get_error(error))
+        if isinstance(model, str):
+            with open(model, 'rb') as f:
+                flag = parser.parse(f.read())
+        else:
+            flag = parser.parse(model.read())
+        if not flag:
+            for error in range(parser.num_errors):
+                print(parser.get_error(error))
 
         # re-order output tensor
         output_tensors = [network.get_output(i) for i in range(network.num_outputs)]
@@ -152,20 +156,16 @@ class TRTEngine:
                 if None, default calibrator will be used as calibration data.
         """
 
-        onnx_model = f'/tmp/{uuid.uuid4()}.onnx'
+        f = io.BytesIO()
 
-        try:
-            torch2onnx(model, dummy_input, onnx_model)
+        torch2onnx(model, dummy_input, f)
 
-            if int8_mode and int8_calibrator is None:
-                int8_calibrator = EntropyCalibrator2(data=utils.to(dummy_input, 'numpy'))
+        f.seek(0)
 
-            engine = TRTEngine.build_from_onnx(onnx_model, log_level, max_workspace_size, fp16_mode, strict_type_constraints, int8_mode, int8_calibrator)
-        except Exception as e:
-            raise e
-        finally:
-            if os.path.exists(onnx_model):
-                os.remove(onnx_model)
+        if int8_mode and int8_calibrator is None:
+            int8_calibrator = EntropyCalibrator2(data=utils.to(dummy_input, 'numpy'))
+
+        engine = TRTEngine.build_from_onnx(f, log_level, max_workspace_size, fp16_mode, strict_type_constraints, int8_mode, int8_calibrator)
 
         return engine
 

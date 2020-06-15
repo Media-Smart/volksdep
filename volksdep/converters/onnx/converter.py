@@ -23,7 +23,7 @@ def torch2onnx(
     Args:
         model (torch.nn.Module): pytorch model
         dummy_input (torch.Tensor or np.ndarray, tuple or list): dummy input into pytorch model.
-        onnx_model_name (string): saved onnx model name.
+        onnx_model_name (string or io object): saved onnx model name.
         opset_version (int, default is 9): by default we export the model to the opset version of the onnx submodule.
             Since ONNX’s latest opset may evolve before next stable release, by default we export to one stable opset
             version. Right now, supported stable opset version is 9
