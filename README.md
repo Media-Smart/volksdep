@@ -1,14 +1,13 @@
 ## Introduction
-volksdep is an open-source toolbox for deploying and accelerating PyTorch, Onnx and Tensorflow models with TensorRT in 
-x86_64 and aarch64 platform.
+volksdep is an open-source toolbox for deploying and accelerating PyTorch, Onnx and Tensorflow models with TensorRT.
 
 ## Features
 - **Auto transformation and acceleration**\
-    volksdep can automatically transform and accelerate PyTorch, Onnx model with TensorRT by writing only some few 
-    codes.
+    volksdep can automatically transform and accelerate PyTorch, Onnx and Tensorflow models with TensorRT by writing 
+    only some few codes.
 
 - **Auto benchmark**\
-    volksdep can automatically generate benchmark with given PyTorch model.
+    volksdep can automatically generate benchmark with given model.
 
 ## License
 This project is released under [Apache 2.0 license](https://github.com/Media-Smart/volksdep/blob/master/LICENSE).
@@ -36,7 +35,7 @@ We have tested the following versions of OS and softwares:
 
 2. Install PyTorch and torchvision following the [official instructions](https://pytorch.org/)
 
-3. If your platform is x86, you can create a conda virtual environment and activate it.
+3. If your platform is x86 or x64, you can create a conda virtual environment and activate it.
 
 ```shell
 conda create -n volksdep python=3.6.9 -y
@@ -58,11 +57,14 @@ python setup.py install
 
 ## Known Issues
 1. Input should be with explicit batch and shape.
-2. PyTorch Upsample operation is supported with specified size, nereast mode and align_corners being False.
+2. PyTorch Upsample operation is supported with specified size, nereast mode and align_corners being None.
 
 ## Usage
 ### Convert
-#### PyTorch convert
+More available arguments of build_from_torch, build_from_onnx and build_from_engine are detailed in 
+[volksdep/converters/tensorrt/engine.py](https://github.com/Media-Smart/volksdep/blob/master/volksdep/converters/onnx/converter.py)
+
+#### PyTorch convert to TensorRT engine
 ```shell
 import numpy as np
 import torch
@@ -70,7 +72,7 @@ import torchvision
 from volksdep.converters import TRTEngine
 from volksdep.converters import EntropyCalibrator2
 
-# create dummy input for tensorRT engine building.
+# create dummy input for tensorrt engine building.
 dummy_input = torch.ones(1, 3, 224, 224)
 # create pytorch model
 model = torchvision.models.resnet18()
@@ -81,26 +83,42 @@ engine = TRTEngine(build_from='torch', model=model, dummy_input=dummy_input)
 # engine = TRTEngine(build_from='torch', model=model, dummy_input=dummy_input, fp16_mode=True)
 # build engine with int8 mode
 # engine = TRTEngine(build_from='torch', model=model, dummy_input=dummy_input, int8_mode=True)
-# build engine with int8 mode and EntropyCalibrator2
+# build engine with int8 mode and provided data using EntropyCalibrator2
 # dummy_calibrator = EntropyCalibrator2(data=np.ones((2, 3, 224, 224)).astype(np.float32))
 # engine = TRTEngine(build_from='torch', model=model, dummy_input=dummy_input, int8_mode=True, int8_calibrator=dummy_calibrator)
 ```
-#### Onnx convert
+
+#### Onnx convert to TensorRT engine
+##### First convert other frameworks to onnx(optional)
+
+PyTorch to Onnx
 ```shell
-import numpy as np
 import torch
 import torchvision
-from volksdep.converters import torch2onnx, TRTEngine
-from volksdep.converters import EntropyCalibrator2
+from volksdep.converters import torch2onnx
 
-onnx_model = 'resnet18.onnx'
-# you can use our torch2onnx to convert pytorch model onnx
 # create dummy input.
 dummy_input = torch.ones(1, 3, 224, 224)
 # create pytorch model
 model = torchvision.models.resnet18()
-# use torch2onnx to convert pytorch model to onnx, the model file named with resnet18.onnx will be saved in your current path.
-torch2onnx(model, dummy_input, onnx_model)
+# use torch2onnx to convert pytorch model to onnx.
+torch2onnx(model, dummy_input, 'resnet18.onnx')
+```
+More available arguments of torch2onnx are detailed in 
+[volksdep/converters/onnx/converter.py](https://github.com/Media-Smart/volksdep/blob/master/volksdep/converters/onnx/converter.py)
+
+[Tensorflow to Onnx](https://github.com/onnx/tensorflow-onnx)
+
+[Keras to Onnx](https://github.com/onnx/keras-onnx)
+
+
+##### Then convert Onnx to TensorRT engine
+```shell
+import numpy as np
+from volksdep.converters import TRTEngine
+from volksdep.converters import EntropyCalibrator2
+
+onnx_model = 'resnet18.onnx'
 
 # build engine with fp32 mode
 engine = TRTEngine(build_from='onnx', model=onnx_model)
@@ -108,30 +126,33 @@ engine = TRTEngine(build_from='onnx', model=onnx_model)
 # engine = TRTEngine(build_from='onnx', model=onnx_model, fp16_mode=True)
 # build engine with int8 mode
 # engine = TRTEngine(build_from='onnx', model=onnx_model, int8_mode=True)
-# build engine with int8 mode and EntropyCalibrator2
+# build engine with int8 mode and provided data using EntropyCalibrator2
 # dummy_calibrator = EntropyCalibrator2(data=np.ones((2, 3, 224, 224)).astype(np.float32))
 # engine = TRTEngine(build_from='onnx', model=onnx_model, int8_mode=True, int8_calibrator=dummy_calibrator)
 ```
-### Execute
+
+### Execute inference
 ```shell
 # input can be numpy data or torch.Tensor data
 trt_output = engine.inference(dummy_input.numpy())
 
 print(trt_output.shape)
 ```
+
 ### Save and load
-We can save the builded engine
+#### Save
 ```shell
 engine.save('resnet18.engine')
 ```
-We can load the saved engine
+#### Load
 ```shell
 from volksdep.converters import TRTEngine
 
 engine = TRTEngine(build_from='engine', model='resnet18.engine')
 ```
+
 ### Benchmark
-#### PyTorch
+#### PyTorch benchmark
 ```shell
 import numpy as np
 import torchvision
@@ -147,7 +168,7 @@ model = torchvision.models.resnet18()
 # simple benchmark, only test throughput and latency
 benchmark(model=model, shape=(1, 3, 224, 224), dtypes=['fp32', 'fp16', 'int8'])
 
-# benchmark with specified metric, should provide test dataset
+# benchmark with provided test dataset and specified metric
 dummy_inputs = np.random.randn(100, 3, 224, 224).astype(np.float32)
 dummy_targets = np.random.randint(0, 1001, size=(100,))
 dummy_dataset = CustomDataset(data=(dummy_inputs, dummy_targets))
@@ -159,7 +180,7 @@ dummy_calibration_data = np.random.randn(10, 3, 224, 224).astype(np.float32)
 dummy_calibrators = [EntropyCalibrator(data=dummy_calibration_data), EntropyCalibrator2(data=dummy_calibration_data), MinMaxCalibrator(data=dummy_calibration_data)]
 benchmark(model=model, shape=(1, 3, 224, 224), int8_calibrator=dummy_calibrators, dataset=dummy_dataset, metric=metric)
 ```
-#### Onnx
+#### Onnx benchmark
 ```shell
 import numpy as np
 from volksdep.converters import EntropyCalibrator, EntropyCalibrator2, MinMaxCalibrator
@@ -203,6 +224,7 @@ class MyDataset(BaseDataset):
     def __len__(self):
         return len(self.dummy_inputs)
 ```
+
 We can define our own metric.
 ```shell
 from volksdep.benchmark.metric import BaseMetric
@@ -220,10 +242,6 @@ class MyMetric(BaseMetric):
     def metric_name(self):
         return 'my_metric'
 ```
-### Other Frameworks
-#### Tensorflow
-You can use [tensorflow-onnx](https://github.com/onnx/tensorflow-onnx) to converter your tensorflow model to onnx, and 
-then use our tool.
 
 ## Contact
 This repository is currently maintained by Hongxiang Cai ([@hxcai](http://github.com/hxcai)).
