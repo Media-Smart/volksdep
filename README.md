@@ -62,7 +62,7 @@ python setup.py install
 ## Usage
 ### Convert
 More available arguments of build_from_torch, build_from_onnx and build_from_engine are detailed in 
-[volksdep/converters/tensorrt/engine.py](https://github.com/Media-Smart/volksdep/blob/master/volksdep/converters/onnx/converter.py)
+[volksdep/converters/tensorrt/engine.py](https://github.com/Media-Smart/volksdep/blob/master/volksdep/converters/tensorrt/engine.py)
 
 #### PyTorch convert to TensorRT engine
 ```shell
