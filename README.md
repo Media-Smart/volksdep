@@ -64,7 +64,7 @@ python setup.py install
 More available arguments of build_from_torch, build_from_onnx and build_from_engine are detailed in 
 [volksdep/converters/tensorrt/engine.py](https://github.com/Media-Smart/volksdep/blob/master/volksdep/converters/tensorrt/engine.py)
 
-#### PyTorch convert to TensorRT engine
+#### PyTorch to TensorRT engine
 ```shell
 import numpy as np
 import torch
@@ -88,7 +88,7 @@ engine = TRTEngine(build_from='torch', model=model, dummy_input=dummy_input)
 # engine = TRTEngine(build_from='torch', model=model, dummy_input=dummy_input, int8_mode=True, int8_calibrator=dummy_calibrator)
 ```
 
-#### Onnx convert to TensorRT engine
+#### Onnx to TensorRT engine
 ##### First convert other frameworks to onnx(optional)
 
 PyTorch to Onnx
