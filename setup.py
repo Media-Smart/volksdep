@@ -55,7 +55,7 @@ setup(
     license='',
     author='hxcai',
     author_email='chxlll@126.com',
-    description='An easy toolbox for deploying and accelerating pytorch model with tensorRT in x86 and arch64 platform.',
+    description='An easy toolbox for deploying and accelerating PyTorch, Onnx and Tensorflow models with TensorRT.',
     long_description=read('README.md'),
     setup_requires=[
         'tensorrt>=7.0.0.*',
