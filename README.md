@@ -89,30 +89,30 @@ engine = TRTEngine(build_from='torch', model=model, dummy_input=dummy_input)
 ```
 
 #### Onnx to TensorRT engine
-##### First convert other frameworks to onnx(optional)
+- First convert other frameworks to onnx(optional)
 
-PyTorch to Onnx
-```shell
-import torch
-import torchvision
-from volksdep.converters import torch2onnx
+    1. PyTorch to Onnx
+    ```shell
+    import torch
+    import torchvision
+    from volksdep.converters import torch2onnx
 
-# create dummy input.
-dummy_input = torch.ones(1, 3, 224, 224)
-# create pytorch model
-model = torchvision.models.resnet18()
-# use torch2onnx to convert pytorch model to onnx.
-torch2onnx(model, dummy_input, 'resnet18.onnx')
-```
-More available arguments of torch2onnx are detailed in 
-[volksdep/converters/onnx/converter.py](https://github.com/Media-Smart/volksdep/blob/master/volksdep/converters/onnx/converter.py)
+    # create dummy input.
+    dummy_input = torch.ones(1, 3, 224, 224)
+    # create pytorch model
+    model = torchvision.models.resnet18()
+    # use torch2onnx to convert pytorch model to onnx.
+    torch2onnx(model, dummy_input, 'resnet18.onnx')
+    ```
 
-[Tensorflow to Onnx](https://github.com/onnx/tensorflow-onnx)
+    More available arguments of torch2onnx are detailed in [volksdep/converters/onnx/converter.py](https://github.com/Media-Smart/volksdep/blob/master/volksdep/converters/onnx/converter.py)
 
-[Keras to Onnx](https://github.com/onnx/keras-onnx)
+    2. [Tensorflow to Onnx](https://github.com/onnx/tensorflow-onnx)
+
+    3. [Keras to Onnx](https://github.com/onnx/keras-onnx)
 
 
-##### Then convert Onnx to TensorRT engine
+- Then convert Onnx to TensorRT engine
 ```shell
 import numpy as np
 from volksdep.converters import TRTEngine
