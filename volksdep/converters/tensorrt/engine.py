@@ -1,6 +1,5 @@
 import io
 import copy
-import uuid
 
 import numpy as np
 import torch
@@ -50,6 +49,7 @@ class TRTEngine:
 
         super(TRTEngine, self).__init__()
 
+        import pycuda.autoinit
         torch.cuda.init()
 
         self.engine = getattr(self, 'build_from_{}'.format(build_from))(*args, **kwargs)

@@ -1,8 +1,8 @@
 import os
 
+import torch
 import tensorrt as trt
 import pycuda.driver as cuda
-import pycuda.autoinit
 
 from ... import utils
 
@@ -26,6 +26,9 @@ class BaseCalibrator(object):
         """
 
         super(BaseCalibrator, self).__init__()
+
+        import pycuda.autoinit
+        torch.cuda.init()
 
         self.batch_size = batch_size
         self.cache_file = cache_file
