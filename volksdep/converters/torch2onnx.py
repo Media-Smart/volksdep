@@ -1,13 +1,9 @@
-import copy
 import warnings
 warnings.filterwarnings("ignore")
 
 import torch
 
-from ... import utils
-
-
-__all__ = ['torch2onnx']
+from .. import utils
 
 
 def torch2onnx(
@@ -22,7 +18,7 @@ def torch2onnx(
 
     Args:
         model (torch.nn.Module): pytorch model
-        dummy_input (torch.Tensor or np.ndarray, tuple or list): dummy input into pytorch model.
+        dummy_input (torch.Tensor, tuple or list): dummy input into pytorch model.
         onnx_model_name (string or io object): saved onnx model name.
         opset_version (int, default is 9): by default we export the model to the opset version of the onnx submodule.
             Since ONNX’s latest opset may evolve before next stable release, by default we export to one stable opset
@@ -36,18 +32,15 @@ def torch2onnx(
         onnx_model_name (string): saved onnx model name
     """
 
-    dummy_input = copy.deepcopy(dummy_input)
-    dummy_input = utils.to(dummy_input, 'torch')
+    dummy_input = list(dummy_input) if isinstance(dummy_input, tuple) else dummy_input
     dummy_input = utils.to(dummy_input, 'cuda')
-    dummy_input = utils.to(dummy_input, torch.float32)
-
-    model = copy.deepcopy(model).cuda().to(torch.float32).eval()
-
+    model.cuda().eval()
     with torch.no_grad():
         output = model(dummy_input)
 
     input_names = utils.get_names(dummy_input, 'input')
     output_names = utils.get_names(output, 'output')
+    dynamic_axes = {name: [0] for name in input_names + output_names}
 
     torch.onnx.export(
         model,
@@ -58,13 +51,5 @@ def torch2onnx(
         opset_version=opset_version,
         do_constant_folding=do_constant_folding,
         verbose=verbose,
+        dynamic_axes=dynamic_axes,
     )
-
-    output = utils.to(output, 'cpu')
-    model = model.cpu()
-    dummy_input = utils.to(dummy_input, 'cpu')
-
-    del output
-    del model
-    del dummy_input
-    torch.cuda.empty_cache()

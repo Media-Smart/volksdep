@@ -133,10 +133,23 @@ def cat(x, y, dim=0):
 
 def gen_ones_data(shapes):
     if isinstance(shapes[0], int):
-        return np.ones(shapes).astype(np.float32)
+        return torch.ones(*shapes)
 
     dummy_data = []
     for shape in shapes:
         dummy_data.append(gen_ones_data(shape))
 
     return dummy_data
+
+
+def get_batch_data(data, start, end):
+    if isinstance(data, torch.Tensor):
+        return data[start:end]
+
+    if isinstance(data, (list, tuple)):
+        out = []
+        for x in data:
+            out.append(get_batch_data(x, start, end))
+        return out
+    else:
+        raise TypeError('Unsupported data type {}, expect torch.Tensor, tuple or list'.format(type(data)))
