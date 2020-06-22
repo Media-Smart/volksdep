@@ -87,27 +87,6 @@ More available arguments of torch2trt are detailed in
 [volksdep/converters/torch2trt.py](https://github.com/Media-Smart/volksdep/blob/master/volksdep/converters/torch2trt.py)
 
 #### Onnx to TensorRT
-- First convert other frameworks to onnx(optional)
-
-    1. PyTorch to Onnx
-    ```shell
-    import torch
-    import torchvision
-    from volksdep.converters import torch2onnx
-    
-    dummy_input = torch.ones(1, 3, 224, 224).cuda()
-    model = torchvision.models.resnet18().cuda().eval()
-    torch2onnx(model, dummy_input, 'resnet18.onnx')
-    ```
-    More available arguments of torch2onnx are detailed in 
-    [volksdep/converters/torch2onnx.py](https://github.com/Media-Smart/volksdep/blob/master/volksdep/converters/torch2onnx.py)
-
-    2. [Tensorflow to Onnx](https://github.com/onnx/tensorflow-onnx)
-
-    3. [Keras to Onnx](https://github.com/onnx/keras-onnx)
-
-
-- Then convert Onnx to TensorRT
 ```shell
 import torch
 from volksdep.converters import onnx2trt
@@ -128,6 +107,24 @@ trt_model = onnx2trt(model)
 ```
 More available arguments of onnx2trt are detailed in 
 [volksdep/converters/onnx2trt.py](https://github.com/Media-Smart/volksdep/blob/master/volksdep/converters/onnx2trt.py)
+
+#### Other frameworks to Onnx
+1. PyTorch to Onnx
+```shell
+import torch
+import torchvision
+from volksdep.converters import torch2onnx
+
+dummy_input = torch.ones(1, 3, 224, 224).cuda()
+model = torchvision.models.resnet18().cuda().eval()
+torch2onnx(model, dummy_input, 'resnet18.onnx')
+```
+More available arguments of torch2onnx are detailed in 
+[volksdep/converters/torch2onnx.py](https://github.com/Media-Smart/volksdep/blob/master/volksdep/converters/torch2onnx.py)
+
+2. [Tensorflow to Onnx](https://github.com/onnx/tensorflow-onnx)
+
+3. [Keras to Onnx](https://github.com/onnx/keras-onnx)
 
 ### Execute inference
 ```shell
