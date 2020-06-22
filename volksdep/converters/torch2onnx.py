@@ -53,3 +53,5 @@ def torch2onnx(
         verbose=verbose,
         dynamic_axes=dynamic_axes,
     )
+
+    torch.cuda.empty_cache()
