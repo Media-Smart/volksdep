@@ -107,7 +107,7 @@ class TRTModel(nn.Module):
             shape = tuple(self.context.get_binding_shape(idx))
             dtype = torch_dtype_from_trt(self.engine.get_binding_dtype(idx))
             device = torch_device_from_trt(self.engine.get_location(idx))
-            output = torch.empty(size=shape, dtype=dtype, device=device)
+            output = torch.empty(size=shape, dtype=dtype, device=device).contiguous()
             outputs[i] = output
             bindings[idx % self.total_length] = output.data_ptr()
 
