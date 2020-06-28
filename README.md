@@ -19,7 +19,7 @@ This project is released under [Apache 2.0 license](https://github.com/Media-Sma
 - Python 3.6 or higher
 - TensorRT 7.1.0.16 or higher
 - PyTorch 1.2.0 or higher
-- CUDA 9.0 or higher
+- CUDA 10.2 or higher
 
 We have tested the following versions of OS and softwares:
 
