@@ -155,7 +155,8 @@ def benchmark(
     assert set(dtypes).issubset(set(VALID_DTYPES)), 'Unsupported dtypes {}, valid dtpyes are {}'.format(set(dtypes)-set(VALID_DTYPES), VALID_DTYPES)
 
     metric_name = str(metric) if dataset and metric else 'no metric'
-    print(TEMPLATE.format('framework', 'version', 'input_shape', 'dtype', 'throughput(FPS)', 'latency(ms)', metric_name))
+    print(TEMPLATE.format('framework', 'version', 'input shape', 'data type', 'throughput(FPS)', 'latency(ms)', metric_name))
+    print(TEMPLATE.format(*[':-:' for _ in range(TEMPLATE.count('|') - 1)]))
 
     dummy_input = utils.gen_ones_data(shape)
     for dtype in dtypes:
