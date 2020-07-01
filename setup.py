@@ -62,7 +62,7 @@ setup(
     ],
     install_requires=[
         'numpy',
-        'torch>=1.2.*',
+        'torch>=1.4.*',
     ],
     python_requires='>3.6',
     cmdclass={

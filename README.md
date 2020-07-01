@@ -18,7 +18,7 @@ This project is released under [Apache 2.0 license](https://github.com/Media-Sma
 - Linux
 - Python 3.6 or higher
 - TensorRT 7.1.0.16 or higher
-- PyTorch 1.2.0 or higher
+- PyTorch 1.4.0 or higher
 - CUDA 10.2 or higher
 
 We have tested the following versions of OS and softwares:
@@ -26,7 +26,7 @@ We have tested the following versions of OS and softwares:
 - OS: Ubuntu 16.04.6 LTS
 - Python 3.6.9
 - TensorRT 7.1.3.4
-- PyTorch 1.2.0
+- PyTorch 1.4.0
 - CUDA: 10.2
 
 ### Install volksdep
@@ -57,7 +57,7 @@ python setup.py install
 
 ## Known Issues
 1. Input shape (width and height) must be fixed.
-2. PyTorch Upsample operation is supported with specified size, nearest mode and align_corners being None.
+2. PyTorch Upsample operation is supported with specified size.
 
 ## Usage
 ### Convert
