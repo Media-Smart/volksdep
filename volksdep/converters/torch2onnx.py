@@ -10,7 +10,7 @@ def torch2onnx(
         model,
         dummy_input,
         onnx_model_name,
-        opset_version=11,
+        opset_version=9,
         do_constant_folding=False,
         verbose=False
 ):
@@ -21,7 +21,7 @@ def torch2onnx(
         dummy_input (torch.Tensor, tuple or list): dummy input into pytorch
             model.
         onnx_model_name (string or io object): saved onnx model name.
-        opset_version (int, default is 11): onnx opset version.
+        opset_version (int, default is 9): onnx opset version.
         do_constant_folding (bool, default False): If True, the
             constant-folding optimization is applied to the model during
             export. Constant-folding optimization will replace some of the ops

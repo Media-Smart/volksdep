@@ -57,7 +57,7 @@ python setup.py install
 
 ## Known Issues
 1. Input shape (width and height) must be fixed.
-2. PyTorch Upsample operation is supported with specified size.
+2. PyTorch Upsample operation is supported with specified size, nearest mode and align_corners being None.
 
 ## Usage
 ### Convert
