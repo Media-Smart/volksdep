@@ -156,7 +156,7 @@ def benchmark(
 
     metric_name = str(metric) if dataset and metric else 'no metric'
     print(TEMPLATE.format('framework', 'version', 'input shape', 'data type', 'throughput(FPS)', 'latency(ms)', metric_name))
-    print(TEMPLATE.format(*[':-:' for _ in range(TEMPLATE.count('|') - 1)]))
+    print(TEMPLATE.format(*[':---:' for _ in range(TEMPLATE.count('|') - 1)]))
 
     dummy_input = utils.gen_ones_data(shape)
     for dtype in dtypes:
