@@ -2,12 +2,12 @@
 volksdep is an open-source toolbox for deploying and accelerating PyTorch, Onnx and Tensorflow models with TensorRT.
 
 ## Features
-- **Auto transformation and acceleration**\
-    volksdep can automatically transform and accelerate PyTorch, Onnx and Tensorflow models with TensorRT by writing 
+- **Auto conversion and acceleration**\
+    volksdep can accelerate PyTorch, Onnx and Tensorflow models using TensorRT with 
     only some few codes.
 
 - **Auto benchmark**\
-    volksdep can automatically generate benchmark with given model.
+    volksdep can generate benchmark with given model.
 
 ## License
 This project is released under [Apache 2.0 license](https://github.com/Media-Smart/volksdep/blob/master/LICENSE).
