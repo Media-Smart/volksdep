@@ -8,7 +8,8 @@ class Accuracy(Metric):
         """calculate accuracy
 
         Args:
-            ignore_index (int, default is -1): samples with label equal to ignore_index will be ignored.
+            ignore_index (int, default is -1): samples with label equal to
+                ignore_index will be ignored.
         """
 
         super(Accuracy, self).__init__()

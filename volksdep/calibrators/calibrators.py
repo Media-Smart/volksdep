@@ -14,15 +14,21 @@ class LegacyCalibrator(BaseCalibrator, trt.IInt8LegacyCalibrator):
     ):
         """LegacyCalibrator
         Args:
-            dataset (volksdep.datasets.base.Dataset): dataset for int8 calibration
+            dataset (volksdep.datasets.base.Dataset): dataset for int8
+                calibration
             batch_size (int, default is 1): int8 calibrate batch size.
-            cache_file (string, default is None): int8 calibrate file. if not  None, cache file will be written if file
-                not exists and load if file exists.
-            quantile (float, default is None): The quantile (between 0 and 1) that will be used to select the region
-                maximum when the quantile method is in use. See the user guide for more details on how the quantile is used.
-            regression_cutoff (float, default is None): The fraction (between 0 and 1) of the maximum used to define the
-                regression cutoff when using regression to determine the region maximum. See the user guide for more details
-                on how the regression cutoff is used.
+            cache_file (string, default is None): int8 calibrate file. if not
+                None, cache file will be written if file not exists and load
+                if file exists.
+            quantile (float, default is None): The quantile (between 0 and 1)
+                that will be used to select the region maximum when the
+                quantile method is in use. See the user guide for more details
+                on how the quantile is used.
+            regression_cutoff (float, default is None): The fraction
+                (between 0 and 1) of the maximum used to define the regression
+                cutoff when using regression to determine the region maximum.
+                See the user guide for more details on how the regression
+                cutoff is used.
         """
 
         BaseCalibrator.__init__(self, dataset, batch_size, cache_file)
@@ -63,10 +69,12 @@ class EntropyCalibrator(BaseCalibrator, trt.IInt8EntropyCalibrator):
         """EntropyCalibrator
 
         Args:
-            dataset (volksdep.datasets.base.Dataset): dataset for int8 calibration
+            dataset (volksdep.datasets.base.Dataset): dataset for int8
+                calibration
             batch_size (int, default is 1): int8 calibrate batch size.
-            cache_file (string, default is None): int8 calibrate file. if not  None, cache file will be written if file
-                not exists and load if file exists.
+            cache_file (string, default is None): int8 calibrate file. if not
+                None, cache file will be written if file not exists and load
+                if file exists.
         """
 
         BaseCalibrator.__init__(self, dataset, batch_size, cache_file)
@@ -87,10 +95,12 @@ class EntropyCalibrator2(BaseCalibrator, trt.IInt8EntropyCalibrator2):
         """EntropyCalibrator2
 
         Args:
-            dataset (volksdep.datasets.base.Dataset): dataset for int8 calibration
+            dataset (volksdep.datasets.base.Dataset): dataset for int8
+                calibration
             batch_size (int, default is 1): int8 calibrate batch size.
-            cache_file (string, default is None): int8 calibrate file. if not  None, cache file will be written if file
-                not exists and load if file exists.
+            cache_file (string, default is None): int8 calibrate file. if not
+                None, cache file will be written if file not exists and load
+                if file exists.
         """
 
         BaseCalibrator.__init__(self, dataset, batch_size, cache_file)
@@ -111,10 +121,12 @@ class MinMaxCalibrator(BaseCalibrator, trt.IInt8MinMaxCalibrator):
         """MinMaxCalibrator
 
         Args:
-            dataset (volksdep.datasets.base.Dataset): dataset for int8 calibration
+            dataset (volksdep.datasets.base.Dataset): dataset for int8
+                calibration
             batch_size (int, default is 1): int8 calibrate batch size.
-            cache_file (string, default is None): int8 calibrate file. if not  None, cache file will be written if file
-                not exists and load if file exists.
+            cache_file (string, default is None): int8 calibrate file. if not
+                None, cache file will be written if file not exists and load
+                if file exists.
         """
 
         BaseCalibrator.__init__(self, dataset, batch_size, cache_file)

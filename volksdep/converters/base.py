@@ -31,7 +31,7 @@ def torch_device_from_trt(device):
     elif device == trt.TensorLocation.HOST:
         return torch.device('cpu')
     else:
-        return TypeError('{} is not supported by torch'.format(device))
+        raise TypeError('{} is not supported by torch'.format(device))
 
 
 class TRTModel(nn.Module):
@@ -61,7 +61,8 @@ class TRTModel(nn.Module):
         self.batch_size_ranges = []
         for idx in range(self.engine.num_optimization_profiles):
             name = self._rename(idx, self.input_names[0])
-            min_shape, opt_shape, max_shape = self.engine.get_profile_shape(idx, name)
+            min_shape, opt_shape, max_shape = self.engine.get_profile_shape(
+                idx, name)
             self.batch_size_ranges.append((min_shape[0], max_shape[0]))
 
         # default profile index is 0
@@ -99,7 +100,8 @@ class TRTModel(nn.Module):
             name = self._rename(self.profile_index, name)
             idx = self.engine.get_binding_index(name)
             dtype = torch_dtype_from_trt(self.engine.get_binding_dtype(idx))
-            bindings[idx % self.total_length] = inputs[i].to(dtype).contiguous().data_ptr()
+            bindings[idx % self.total_length] = (
+                inputs[i].to(dtype).contiguous().data_ptr())
 
         for i, name in enumerate(self.output_names):
             name = self._rename(self.profile_index, name)
@@ -107,7 +109,8 @@ class TRTModel(nn.Module):
             shape = tuple(self.context.get_binding_shape(idx))
             dtype = torch_dtype_from_trt(self.engine.get_binding_dtype(idx))
             device = torch_device_from_trt(self.engine.get_location(idx))
-            output = torch.empty(size=shape, dtype=dtype, device=device).contiguous()
+            output = torch.empty(
+                size=shape, dtype=dtype, device=device).contiguous()
             outputs[i] = output
             bindings[idx % self.total_length] = output.data_ptr()
 
@@ -132,14 +135,16 @@ class TRTModel(nn.Module):
             inputs (torch.Tensor, tuple or list): inputs into trt engine.
 
         Returns:
-            outputs (torch.Tensor or list): return torch.Tensor if there is only one output, else return list
+            outputs (torch.Tensor or list): return torch.Tensor if there is
+                only one output, else return list
         """
 
         inputs = utils.flatten(inputs)
         batch_size = inputs[0].shape[0]
-        assert batch_size <= self.engine.max_batch_size, 'input batch_size {} '.format(batch_size) + \
-        'is larger than engine max_batch_size {}, '.format(self.engine.max_batch_size) + \
-        'please increase max_batch_size and rebuild engine.'
+        assert batch_size <= self.engine.max_batch_size, (
+            'input batch_size {} is larger than engine max_batch_size {}, '
+            'please increase max_batch_size and rebuild engine.'
+        ).format(batch_size, self.engine.max_batch_size)
 
         # support dynamic batch size when engine has explicit batch dimension.
         if not self.engine.has_implicit_batch_dimension:
@@ -147,7 +152,8 @@ class TRTModel(nn.Module):
             self._set_binding_shape(inputs)
 
         outputs, bindings = self._get_bindings(inputs)
-        self.context.execute_async_v2(bindings, torch.cuda.current_stream().cuda_stream)
+        self.context.execute_async_v2(bindings,
+                                      torch.cuda.current_stream().cuda_stream)
 
         if len(outputs) == 1:
             outputs = outputs[0]
@@ -159,8 +165,8 @@ def load(engine, log_level='ERROR'):
     """build trt engine from saved engine
     Args:
         engine (string): engine file name to load
-        log_level (string, default is ERROR): tensorrt logger level, now INTERNAL_ERROR, ERROR, WARNING, INFO,
-            VERBOSE are support.
+        log_level (string, default is ERROR): tensorrt logger level,
+            INTERNAL_ERROR, ERROR, WARNING, INFO, VERBOSE are support.
     """
 
     logger = trt.Logger(getattr(trt.Logger, log_level))

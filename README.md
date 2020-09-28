@@ -6,8 +6,8 @@ volksdep is an open-source toolbox for deploying and accelerating PyTorch, Onnx 
     volksdep can accelerate PyTorch, Onnx and Tensorflow models using TensorRT with 
     only some few codes.
 
-- **Auto benchmark**\
-    volksdep can generate benchmark with given model.
+- **Benchmark of throughput, latency and metric**\
+    volksdep can generate benchmark of throughput, latency and metric with given model.
 
 ## License
 This project is released under [Apache 2.0 license](https://github.com/Media-Smart/volksdep/blob/master/LICENSE).
@@ -73,13 +73,13 @@ from volksdep.datasets import CustomDataset
 dummy_input = torch.ones(1, 3, 224, 224).cuda()
 model = torchvision.models.resnet18().cuda().eval()
 
-# build trt model with fp32 mode
+## build trt model with fp32 mode
 trt_model = torch2trt(model, dummy_input)
-# build trt model with fp16 mode
+## build trt model with fp16 mode
 # trt_model = torch2trt(model, dummy_input, fp16_mode=True)
-# build trt model with int8 mode
+## build trt model with int8 mode
 # trt_model = torch2trt(model, dummy_input, int8_mode=True)
-# build trt model with int8 mode and provided data using EntropyCalibrator2
+## build trt model with int8 mode and provided data using EntropyCalibrator2
 # dummy_calibrator = EntropyCalibrator2(CustomDataset(torch.randn(4, 3, 224, 224)))
 # trt_model = torch2trt(model, dummy_input, int8_mode=True, int8_calibrator=dummy_calibrator)
 ```
@@ -95,13 +95,13 @@ from volksdep.datasets import CustomDataset
 
 model = 'resnet18.onnx'
 
-# build trt model with fp32 mode
+## build trt model with fp32 mode
 trt_model = onnx2trt(model)
-# build trt model with fp16 mode
+## build trt model with fp16 mode
 # trt_model = onnx2trt(model, fp16_mode=True)
-# build trt model with int8 mode
+## build trt model with int8 mode
 # trt_model = onnx2trt(model, int8_mode=True)
-# build trt model with int8 mode and provided data using EntropyCalibrator2
+## build trt model with int8 mode and provided data using EntropyCalibrator2
 # dummy_calibrator = EntropyCalibrator2(CustomDataset(torch.randn(4, 3, 224, 224)))
 # trt_model = onnx2trt(model, int8_mode=True, int8_calibrator=dummy_calibrator)
 ```
@@ -159,15 +159,15 @@ from volksdep.metrics import Accuracy
 
 model = torchvision.models.resnet18()
 
-# simple benchmark, only test throughput and latency
+## simple benchmark, only test throughput and latency
 benchmark(model, (1, 3, 224, 224), dtypes=['fp32', 'fp16', 'int8'])
-# benchmark with provided test dataset and metric
+## benchmark with provided test dataset and metric
 # dummy_inputs = torch.randn(100, 3, 224, 224)
 # dummy_targets = torch.randint(0, 1001, size=(100,))
 # dummy_dataset = CustomDataset(dummy_inputs, dummy_targets)
 # metric = Accuracy()
 # benchmark(model, (1, 3, 224, 224), dataset=dummy_dataset, metric=metric)
-# benchmark with provided test dataset, metric and  data for int8 calibration
+## benchmark with provided test dataset, metric and  data for int8 calibration
 # dummy_data = torch.randn(10, 3, 224, 224)
 # dummy_calibrators = [
 #     EntropyCalibrator(CustomDataset(dummy_data)),
@@ -190,15 +190,15 @@ from volksdep.metrics import Accuracy
 
 model = 'resnet18.onnx'
 
-# simple benchmark, only test throughput and latency
+## simple benchmark, only test throughput and latency
 benchmark(model, (1, 3, 224, 224), framework='onnx', dtypes=['fp32', 'fp16', 'int8'])
-# benchmark with provided test dataset and metric
+## benchmark with provided test dataset and metric
 # dummy_inputs = torch.randn(100, 3, 224, 224)
 # dummy_targets = torch.randint(0, 1001, size=(100,))
 # dummy_dataset = CustomDataset(dummy_inputs, dummy_targets)
 # metric = Accuracy()
 # benchmark(model, (1, 3, 224, 224), framework='onnx', dataset=dummy_dataset, metric=metric)
-# benchmark with provided test dataset, metric and  data for int8 calibration
+## benchmark with provided test dataset, metric and  data for int8 calibration
 # dummy_data = torch.randn(10, 3, 224, 224)
 # dummy_calibrators = [
 #     EntropyCalibrator(CustomDataset(dummy_data)),
@@ -218,7 +218,6 @@ import torchvision
 from volksdep.datasets import Dataset
 from volksdep.calibrators import EntropyCalibrator2
 from volksdep.metrics import Metric
-from volksdep.converters import torch2trt
 from volksdep import benchmark
 
 

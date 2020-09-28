@@ -16,9 +16,10 @@ class Metric(object):
         """calculate metric result
 
         Args:
-            preds (np.numpy, list or tuple): outputs from pytorch model or tensorRT engine, and will be flatten
-                automatecally. Please make sure outputs order from pytorch model is the same as outputs order from
-                tensorRT egnine.
+            preds (np.numpy, list or tuple): outputs from PyTorch model or
+                TensorRT engine, and will be flatten automatecally. Please
+                make sure outputs order from PyTorch model is the same as
+                outputs order from TensorRT egnine.
             targets (np.numpy, list or tuple): targets given by user.
         """
         pass

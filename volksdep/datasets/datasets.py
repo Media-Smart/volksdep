@@ -13,20 +13,20 @@ class CustomDataset(Dataset):
 
         super(CustomDataset, self).__init__()
 
-        self.inputs_form = utils.get_form(inputs)
+        self.inputs_forms = utils.get_forms(inputs)
         self.inputs = utils.flatten(inputs)
 
         if targets is not None:
-            self.targets_form = utils.get_form(targets)
+            self.targets_forms = utils.get_forms(targets)
             self.targets = utils.flatten(targets)
 
     def __getitem__(self, idx):
         inputs = [inp[idx] for inp in self.inputs]
-        inputs = utils.flatten_reform(inputs, self.inputs_form)
+        inputs = utils.reconstruct(inputs, self.inputs_forms)
 
         if hasattr(self, 'targets'):
             targets = [target[idx] for target in self.targets]
-            targets = utils.flatten_reform(targets, self.targets_form)
+            targets = utils.reconstruct(targets, self.targets_forms)
 
             return inputs, targets
 

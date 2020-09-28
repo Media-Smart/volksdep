@@ -1,7 +1,6 @@
 import os
 
 import torch
-import tensorrt as trt
 
 from .. import utils
 
@@ -16,10 +15,12 @@ class BaseCalibrator(object):
         """base int8 calibrator
 
         Args:
-            dataset (volksdep.datasets.base.Dataset): dataset for int8 calibration
+            dataset (volksdep.datasets.base.Dataset): dataset for int8
+                calibration
             batch_size (int, default is 1): int8 calibrate batch size.
-            cache_file (string, default is None): int8 calibrate file. if not  None, cache file will be written if file
-                not exists and load if file exists.
+            cache_file (string, default is None): int8 calibrate file. if not
+                None, cache file will be written if file not exists and load
+                if file exists.
         """
 
         super(BaseCalibrator, self).__init__()
@@ -32,7 +33,8 @@ class BaseCalibrator(object):
         self.buffers = []
         for data in utils.flatten(self.dataset[0]):
             size = (self.batch_size,) + tuple(data.shape)
-            buf = torch.zeros(size=size, dtype=data.dtype, device='cuda').contiguous()
+            buf = torch.zeros(
+                size=size, dtype=data.dtype, device='cuda').contiguous()
             self.buffers.append(buf)
 
         self.num_batch = len(dataset) // self.batch_size
@@ -54,7 +56,8 @@ class BaseCalibrator(object):
     def get_batch(self, *args, **kwargs):
         if self.batch_idx < self.num_batch:
             for i in range(self.batch_size):
-                inputs = utils.flatten(self.dataset[self.batch_idx*self.batch_size+i])
+                inputs = utils.flatten(
+                    self.dataset[self.batch_idx*self.batch_size+i])
                 for buffer, inp in zip(self.buffers, inputs):
                     buffer[i].copy_(inp)
             self.batch_idx += 1

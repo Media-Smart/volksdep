@@ -43,7 +43,9 @@ def metric_evaluation(model, dtype, dataset, metric):
             inputs = utils.to(inputs, 'cuda')
             inputs = utils.to(inputs, TORCH_DTYPES[dtype])
             targets = utils.to(targets, 'numpy')
-            inputs, targets = utils.add_batch_dim(inputs), utils.add_batch_dim(targets)
+
+            inputs = utils.add_batch_dim(inputs)
+            targets = utils.add_batch_dim(targets)
 
             outs = model(inputs)
             outs = utils.to(outs, 'numpy')
@@ -91,7 +93,8 @@ def speed_evaluation(model, dummy_input, iters=100):
     return throughput, latency
 
 
-def torch_benchmark(model, dummy_input, dtype, iters=100, dataset=None, metric=None):
+def torch_benchmark(model, dummy_input, dtype, iters=100, dataset=None,
+                    metric=None):
     dummy_input = utils.to(dummy_input, 'cuda')
     dummy_input = utils.to(dummy_input, TORCH_DTYPES[dtype])
     model.cuda().eval().to(TORCH_DTYPES[dtype])
@@ -102,7 +105,8 @@ def torch_benchmark(model, dummy_input, dtype, iters=100, dataset=None, metric=N
     return throughput, latency, value
 
 
-def trt_benchmark(model, dummy_input, framework, dtype, iters=100, int8_calibrator=None, dataset=None, metric=None):
+def trt_benchmark(model, dummy_input, framework, dtype, iters=100,
+                  int8_calibrator=None, dataset=None, metric=None):
     dummy_input = utils.to(dummy_input, 'cuda')
     dummy_input = utils.to(dummy_input, TORCH_DTYPES['fp32'])
 
@@ -112,7 +116,8 @@ def trt_benchmark(model, dummy_input, framework, dtype, iters=100, int8_calibrat
     elif framework == 'onnx':
         trt_engine = partial(onnx2trt, model)
     else:
-        raise ValueError('Unsupported framework {}, now only support torch, onnx'.format(framework))
+        raise ValueError(('Unsupported framework {}, '
+                          'now only support torch, onnx').format(framework))
 
     if dtype == 'fp32':
         model = trt_engine()
@@ -142,44 +147,64 @@ def benchmark(
     """generate benchmark with given model
 
     Args:
-        model (torch.nn.Module or string): pytorch or onnx model
+        model (torch.nn.Module or string): PyTorch or Onnx model
         shape (tuple, list): model input shapes
-        framework (string, default torch): model framework, only torch and onnx are valid strings.
-        dtypes (tuple or list, default is ('fp32', 'fp16', 'int8')): dtypes need to be evaluated.
-        iters (int, default is 100): larger iters gives more stable performance and cost more time to run.
-        int8_calibrator (volksdep.calibrators.base.BaseCalibrator, default is None): calibrator for int8 mode
-        dataset (volksdep.datasets.base.Dataset, default is None): used for metric calculation
-        metric (volksdep.metrics.base.BaseMetric, default is None): used for metric calculation
+        framework (string, default torch): model framework, only torch and onnx
+            are valid strings.
+        dtypes (tuple or list, default is ('fp32', 'fp16', 'int8')): dtypes
+            need to be evaluated.
+        iters (int, default is 100): larger iters gives more stable performance
+            and cost more time to run.
+        int8_calibrator (volksdep.calibrators.base.BaseCalibrator,
+            default is None): calibrator for int8 mode
+        dataset (volksdep.datasets.base.Dataset, default is None): used for
+            metric calculation
+        metric (volksdep.metrics.base.BaseMetric, default is None): used for
+            metric calculation
     """
 
-    assert set(dtypes).issubset(set(VALID_DTYPES)), 'Unsupported dtypes {}, valid dtpyes are {}'.format(set(dtypes)-set(VALID_DTYPES), VALID_DTYPES)
+    assert set(dtypes).issubset(set(VALID_DTYPES)), (
+        'Unsupported dtypes {}, valid dtpyes are {}').format(
+        set(dtypes)-set(VALID_DTYPES), VALID_DTYPES)
 
     metric_name = str(metric) if dataset and metric else 'no metric'
-    print(TEMPLATE.format('framework', 'version', 'input shape', 'data type', 'throughput(FPS)', 'latency(ms)', metric_name))
+    print(TEMPLATE.format('framework', 'version', 'input shape', 'data type',
+                          'throughput(FPS)', 'latency(ms)', metric_name))
     print(TEMPLATE.format(*[':---:' for _ in range(TEMPLATE.count('|') - 1)]))
 
-    dummy_input = utils.gen_ones_data(shape)
+    dummy_input = utils.gen_ones(shape)
     for dtype in dtypes:
         if framework == 'torch':
             if dtype not in ['fp32', 'fp16']:
                 pass
             else:
-                throughput, latency, value = torch_benchmark(model, dummy_input, dtype, iters, dataset, metric)
-                print(TEMPLATE.format('pytorch', TORCH_VERSION, str(shape), dtype, throughput, latency, value))
+                throughput, latency, value = torch_benchmark(
+                    model, dummy_input, dtype, iters, dataset, metric)
+                print(TEMPLATE.format('pytorch', TORCH_VERSION, str(shape),
+                                      dtype, throughput, latency, value))
 
         if dtype == 'int8':
             if int8_calibrator is None:
-                int8_calibrators = [EntropyCalibrator2(CustomDataset(dummy_input))]
+                int8_calibrators = [
+                    EntropyCalibrator2(CustomDataset(dummy_input))]
             elif not isinstance(int8_calibrator, (list, tuple)):
                 int8_calibrators = [int8_calibrator]
             else:
                 int8_calibrators = int8_calibrator
 
             for int8_calibrator in int8_calibrators:
-                throughput, latency, value = trt_benchmark(model, dummy_input, framework, dtype, iters, int8_calibrator, dataset, metric)
-                print(TEMPLATE.format('tensorrt', TRT_VERSION, str(shape), '{}({})'.format(dtype, str(int8_calibrator)), throughput, latency, str(value)))
+                throughput, latency, value = trt_benchmark(
+                    model, dummy_input, framework, dtype, iters,
+                    int8_calibrator, dataset, metric)
+                print(TEMPLATE.format(
+                    'tensorrt', TRT_VERSION, str(shape),
+                    '{}({})'.format(dtype, str(int8_calibrator)), throughput,
+                    latency, str(value)))
         else:
-            throughput, latency, value =  trt_benchmark(model, dummy_input, framework, dtype, iters, int8_calibrator, dataset, metric)
-            print(TEMPLATE.format('tensorrt', TRT_VERSION, str(shape), dtype, throughput, latency, str(value)))
+            throughput, latency, value = trt_benchmark(
+                model, dummy_input, framework, dtype, iters, int8_calibrator,
+                dataset, metric)
+            print(TEMPLATE.format('tensorrt', TRT_VERSION, str(shape), dtype,
+                                  throughput, latency, str(value)))
 
         torch.cuda.empty_cache()

@@ -7,26 +7,25 @@ def get_names(inp, prefix):
         inp = [inp]
 
     names = []
-    for i in range(len(inp)):
-        sub_inp = inp[i]
+    for i, sub_inp in enumerate(inp):
         sub_prefix = '{}.{}'.format(prefix, i)
         if isinstance(sub_inp, (list, tuple)):
-            names += get_names(sub_inp, sub_prefix)
+            names.extend(get_names(sub_inp, sub_prefix))
         else:
             names.append(sub_prefix)
 
     return names
 
 
-def get_form(inp):
+def get_forms(inp):
     if not isinstance(inp, (tuple, list)):
         return 'x'
 
-    data_format = []
-    for x in inp:
-        data_format.append(get_form(x))
+    forms = []
+    for sub_inp in inp:
+        forms.append(get_forms(sub_inp))
 
-    return data_format
+    return forms
 
 
 def to(inp, device_or_dtype):
@@ -54,32 +53,33 @@ def to(inp, device_or_dtype):
             elif device_or_dtype == 'numpy':
                 inp = np.array(inp)
         else:
-            raise TypeError('Unsupported type {}, expect int, float, np.ndarray or torch.Tensor'.format(type(inp)))
+            raise TypeError(('Unsupported type {}, expect int, float, '
+                             'np.ndarray or torch.Tensor').format(type(inp)))
 
         return inp
-    else:
-        out = []
-        for x in inp:
-            out.append(to(x, device_or_dtype))
 
-        return out
+    out = []
+    for sub_inp in inp:
+        out.append(to(sub_inp, device_or_dtype))
+
+    return out
 
 
 def flatten(inp):
     if not isinstance(inp, (tuple, list)):
         return [inp]
-    else:
-        out = []
-        for x in inp:
-            out += flatten(x)
 
-        return out
+    out = []
+    for sub_inp in inp:
+        out.extend(flatten(sub_inp))
+
+    return out
 
 
-def flatten_reform(inp, form):
-    assert len(flatten(inp)) == len(flatten(form))
+def reconstruct(inp, forms):
+    assert len(flatten(inp)) == len(flatten(forms))
 
-    if not isinstance(form, (tuple, list)):
+    if not isinstance(forms, (tuple, list)):
         if isinstance(inp, (tuple, list)):
             assert len(inp) == 1
             return inp[0]
@@ -88,10 +88,10 @@ def flatten_reform(inp, form):
 
     out = []
     index = 0
-    for sub_form in form:
+    for sub_form in forms:
         if isinstance(sub_form, (tuple, list)):
             sub_form_len = len(flatten(sub_form))
-            out.append(flatten_reform(inp[:sub_form_len], sub_form))
+            out.append(reconstruct(inp[:sub_form_len], sub_form))
             index += sub_form_len
         else:
             out.append(inp[index])
@@ -105,51 +105,56 @@ def add_batch_dim(inp):
         return inp[None, ...]
 
     out = []
-    for x in inp:
-        out.append(add_batch_dim(x))
+    for sub_inp in inp:
+        out.append(add_batch_dim(sub_inp))
 
     return out
 
 
 def cat(x, y, dim=0):
-    if isinstance(x, (tuple, list)):
-        assert isinstance(y, (tuple, list)) and (len(x) == len(y))
+    x = list(x) if isinstance(x, (tuple, list)) else x
+    y = list(y) if isinstance(y, (tuple, list)) else y
+
+    assert type(x) == type(y)
+
+    if isinstance(x, list):
+        assert len(x) == len(y)
 
         out = []
         for sub_x, sub_y in zip(x, y):
             out.append(cat(sub_x, sub_y, dim))
         return out
     elif isinstance(x, torch.Tensor):
-        assert isinstance(y, torch.Tensor)
-
         return torch.cat([x, y], dim=dim)
     elif isinstance(x, np.ndarray):
-        assert isinstance(y, np.ndarray)
-
         return np.concatenate([x, y], axis=dim)
     else:
-        raise TypeError('Unsupported data type {}, expect np.ndarray or torch.Tensor'.format(type(x)))
+        raise TypeError(('Unsupported data type {}, '
+                         'expect np.ndarray or torch.Tensor').format(type(x)))
 
 
-def gen_ones_data(shapes):
-    if isinstance(shapes[0], int):
-        return torch.ones(*shapes)
+def gen_ones(shape):
+    if isinstance(shape[0], int):
+        return torch.ones(*shape)
 
-    dummy_data = []
-    for shape in shapes:
-        dummy_data.append(gen_ones_data(shape))
+    data = []
+    for sub_shape in shape:
+        data.append(gen_ones(sub_shape))
 
-    return dummy_data
+    return data
 
 
-def get_batch_data(data, start, end):
+def fetch_batch(data, start, end):
     if isinstance(data, torch.Tensor):
         return data[start:end]
 
-    if isinstance(data, (list, tuple)):
-        out = []
-        for x in data:
-            out.append(get_batch_data(x, start, end))
-        return out
-    else:
-        raise TypeError('Unsupported data type {}, expect torch.Tensor, tuple or list'.format(type(data)))
+    assert not isinstance(data, (tuple, list)), (
+        'Unsupported data type {}, only torch.Tensor, '
+        'tuple or list are supported').format(type(data))
+
+    batch = []
+    for sub_data in data:
+        batch.append(fetch_batch(sub_data, start, end))
+
+    return batch
+
