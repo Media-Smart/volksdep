@@ -273,6 +273,3 @@ benchmark(model, (1, 3, 224, 224), int8_calibrator=calibrator, dataset=dataset, 
 
 ## Contact
 This repository is currently maintained by Hongxiang Cai ([@hxcai](http://github.com/hxcai)), Yichao Xiong ([@mileistone](https://github.com/mileistone)).
-
-## Credits
-We got a lot of code from [torch2trt](https://github.com/NVIDIA-AI-IOT/torch2trt).
