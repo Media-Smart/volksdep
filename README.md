@@ -42,17 +42,10 @@ conda create -n volksdep python=3.6.9 -y
 conda activate volksdep
 ```
 
-4. Clone the volksdep repository.
+4. Setup.
 
 ```shell
-git clone https://github.com/Media-Smart/volksdep.git
-cd volksdep
-```
-
-5. Setup.
-
-```shell
-python setup.py install
+pip install "git+https://github.com/Media-Smart/volksdep.git"
 ```
 
 ## Known Issues
