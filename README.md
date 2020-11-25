@@ -31,16 +31,16 @@ We have tested the following versions of OS and softwares:
 
 ### Install volksdep
 
-1. Install TensorRT following the [official instructions](https://developer.nvidia.com/tensorrt/)
-
-2. Install PyTorch and torchvision following the [official instructions](https://pytorch.org/)
-
-3. If your platform is x86 or x64, you can create a conda virtual environment and activate it.
+1. If your platform is x86 or x64, you can create a conda virtual environment and activate it.
 
 ```shell
 conda create -n volksdep python=3.6.9 -y
 conda activate volksdep
 ```
+
+2. Install TensorRT following the [official instructions](https://developer.nvidia.com/tensorrt/)
+
+3. Install PyTorch and torchvision following the [official instructions](https://pytorch.org/)
 
 4. Setup.
 
