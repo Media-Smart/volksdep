@@ -10,6 +10,7 @@ def torch2onnx(
         model,
         dummy_input,
         onnx_model_name,
+        dynamic_shape=False,
         opset_version=9,
         do_constant_folding=False,
         verbose=False):
@@ -20,6 +21,8 @@ def torch2onnx(
         model (torch.nn.Module): PyTorch model.
         dummy_input (torch.Tensor, tuple or list): dummy input.
         onnx_model_name (string or io object): saved Onnx model name.
+        dynamic_shape (bool, default is False): if False, only first dimension
+            will be dynamic; if True, all dimensions will be dynamic.
         opset_version (int, default is 9): Onnx opset version.
         do_constant_folding (bool, default False): If True, the
             constant-folding optimization is applied to the model during
@@ -41,7 +44,11 @@ def torch2onnx(
 
     input_names = utils.get_names(dummy_input, 'input')
     output_names = utils.get_names(output, 'output')
-    dynamic_axes = {name: [0] for name in input_names + output_names}
+
+    dynamic_axes = dict()
+    for name, tensor in zip(input_names+output_names,
+                            utils.flatten(dummy_input)+utils.flatten(output)):
+        dynamic_axes[name] = list(range(tensor.dim())) if dynamic_shape else [0]
 
     torch.onnx.export(
         model,
