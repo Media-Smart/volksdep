@@ -49,10 +49,9 @@ class CleanCommand(Command):
 
 setup(
     name='volksdep',
-    version='3.1.0',
+    version='3.2.0',
     packages=find_packages(),
-    url='',
-    license='',
+    url='https://github.com/Media-Smart/volksdep',
     author='hxcai',
     author_email='chxlll@126.com',
     description='An easy toolbox for deploying and accelerating PyTorch, Onnx and Tensorflow models with TensorRT.',

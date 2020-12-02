@@ -9,6 +9,8 @@ def torch2trt(
         dummy_input,
         log_level='ERROR',
         max_batch_size=1,
+        min_input_shapes=None,
+        max_input_shapes=None,
         max_workspace_size=1,
         fp16_mode=False,
         strict_type_constraints=False,
@@ -28,6 +30,12 @@ def torch2trt(
         max_batch_size (int, default=1): The maximum batch size which can be
             used at execution time, and also the batch size for which the
             ICudaEngine will be optimized.
+        min_input_shapes (list, default is None): Minimum input shapes, should
+            be provided when shape is dynamic. For example, [(3, 224, 224)] is
+            for only one input.
+        max_input_shapes (list, default is None): Maximum input shapes, should
+            be provided when shape is dynamic. For example, [(3, 224, 224)] is
+            for only one input.
         max_workspace_size (int, default is 1): The maximum GPU temporary
             memory which the ICudaEngine can use at execution time. default is
             1GB.
@@ -52,13 +60,16 @@ def torch2trt(
             description of the trace being exported.
     """
 
+    assert not (bool(min_input_shapes) ^ bool(max_input_shapes))
+
     f = io.BytesIO()
-    torch2onnx(model, dummy_input, f, opset_version, do_constant_folding,
-               verbose)
+    dynamic_shape = bool(min_input_shapes) and bool(max_input_shapes)
+    torch2onnx(model, dummy_input, f, dynamic_shape, opset_version,
+               do_constant_folding, verbose)
     f.seek(0)
 
-    trt_model = onnx2trt(f, log_level, max_batch_size, max_workspace_size,
-                         fp16_mode, strict_type_constraints, int8_mode,
-                         int8_calibrator)
+    trt_model = onnx2trt(f, log_level, max_batch_size, min_input_shapes,
+                         max_input_shapes, max_workspace_size, fp16_mode,
+                         strict_type_constraints, int8_mode, int8_calibrator)
 
     return trt_model

@@ -10,6 +10,8 @@ def onnx2trt(
         model,
         log_level='ERROR',
         max_batch_size=1,
+        min_input_shapes=None,
+        max_input_shapes=None,
         max_workspace_size=1,
         fp16_mode=False,
         strict_type_constraints=False,
@@ -24,6 +26,12 @@ def onnx2trt(
         max_batch_size (int, default=1): The maximum batch size which can be
             used at execution time, and also the batch size for which the
             ICudaEngine will be optimized.
+        min_input_shapes (list, default is None): Minimum input shapes, should
+            be provided when shape is dynamic. For example, [(3, 224, 224)] is
+            for only one input.
+        max_input_shapes (list, default is None): Maximum input shapes, should
+            be provided when shape is dynamic. For example, [(3, 224, 224)] is
+            for only one input.
         max_workspace_size (int, default is 1): The maximum GPU temporary
             memory which the ICudaEngine can use at execution time. default is
             1GB.
@@ -82,15 +90,27 @@ def onnx2trt(
             int8_calibrator = EntropyCalibrator2(CustomDataset(dummy_data))
         config.int8_calibrator = int8_calibrator
 
-    # set dynamic batch size profile
+    # set dynamic shape profile
+    assert not (bool(min_input_shapes) ^ bool(max_input_shapes))
+
     profile = builder.create_optimization_profile()
+
+    input_shapes = [network.get_input(i).shape[1:]
+                    for i in range(network.num_inputs)]
+    if not min_input_shapes:
+        min_input_shapes = input_shapes
+    if not max_input_shapes:
+        max_input_shapes = input_shapes
+
+    assert len(min_input_shapes) == len(max_input_shapes) == len(input_shapes)
+
     for i in range(network.num_inputs):
         tensor = network.get_input(i)
         name = tensor.name
-        shape = tensor.shape[1:]
-        min_shape = (1,) + shape
-        opt_shape = ((1 + max_batch_size) // 2,) + shape
-        max_shape = (max_batch_size,) + shape
+        min_shape = (1,) + min_input_shapes[i]
+        max_shape = (max_batch_size,) + max_input_shapes[i]
+        opt_shape = [(min_ + max_) // 2
+                     for min_, max_ in zip(min_shape, max_shape)]
         profile.set_shape(name, min_shape, opt_shape, max_shape)
     config.add_optimization_profile(profile)
 

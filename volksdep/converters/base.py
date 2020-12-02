@@ -59,14 +59,6 @@ class TRTModel(nn.Module):
                 else:
                     self.output_names.append(name)
 
-        # get batch size range of each profile
-        self.batch_size_ranges = []
-        for idx in range(self.engine.num_optimization_profiles):
-            name = self._rename(idx, self.input_names[0])
-            min_shape, opt_shape, max_shape = self.engine.get_profile_shape(
-                idx, name)
-            self.batch_size_ranges.append((min_shape[0], max_shape[0]))
-
         # default profile index is 0
         self.profile_index = 0
 
@@ -77,13 +69,24 @@ class TRTModel(nn.Module):
 
         return name
 
-    def _activate_profile(self, batch_size):
-        for idx, bs_range in enumerate(self.batch_size_ranges):
-            if bs_range[0] <= batch_size <= bs_range[1]:
+    def _activate_profile(self, inputs):
+        for idx in range(self.engine.num_optimization_profiles):
+            is_matched = True
+            for name, inp in zip(self.input_names, inputs):
+                name = self._rename(idx, name)
+                min_shape, _, max_shape = self.engine.get_profile_shape(
+                    idx, name)
+                for s, min_s, max_s in zip(inp.shape, min_shape, max_shape):
+                    is_matched = min_s <= s <= max_s
+
+            if is_matched:
                 if self.profile_index != idx:
                     self.profile_index = idx
                     self.context.active_optimization_profile = idx
-                return
+
+                return True
+
+        return False
 
     def _set_binding_shape(self, inputs):
         for name, inp in zip(self.input_names, inputs):
@@ -142,15 +145,12 @@ class TRTModel(nn.Module):
         """
 
         inputs = utils.flatten(inputs)
-        batch_size = inputs[0].shape[0]
-        assert batch_size <= self.engine.max_batch_size, (
-            'input batch_size {} is larger than engine max_batch_size {}, '
-            'please increase max_batch_size and rebuild engine.'
-        ).format(batch_size, self.engine.max_batch_size)
 
-        # support dynamic batch size when engine has explicit batch dimension.
+        # support dynamic shape when engine has explicit batch dimension.
         if not self.engine.has_implicit_batch_dimension:
-            self._activate_profile(batch_size)
+            status = self._activate_profile(inputs)
+            assert status, (
+                f'input shapes {[inp.shape for inp in inputs]} out of range')
             self._set_binding_shape(inputs)
 
         outputs, bindings = self._get_bindings(inputs)
